@@ -212,6 +212,36 @@ services:
 
 `floci`는 비어 있지 않은 아무 자격증명이나 받아들입니다. 실제 AWS 계정은 필요하지 않습니다.
 
+중요:
+
+- `floci`가 AWS CLI 자체를 대체하는 것은 아닙니다.
+- 기존에 사용하던 `aws` 명령을 그대로 쓰되, 요청 대상을 `floci` 엔드포인트로 바꿔 보내는 방식입니다.
+- 따라서 `--endpoint-url`이나 전용 프로필을 잘못 설정하면, 명령이 실제 AWS로 나갈 수도 있습니다.
+
+### 기존 AWS CLI 사용자가 가장 안전하게 쓰는 방법
+
+기존에 실제 AWS 계정과 프로필을 이미 쓰고 있다면, 기본 프로필을 바꾸지 말고 `floci` 전용 프로필을 따로 만드는 것이 가장 안전합니다.
+
+권장 패턴:
+
+- 실제 AWS용 `default` 또는 기존 프로필은 그대로 유지
+- `floci` 전용 프로필을 별도로 생성
+- `floci`를 사용할 때만 `--profile floci --endpoint-url http://localhost:4566`를 명시
+
+가장 안전한 예시:
+
+```bash
+aws s3 ls --profile floci --endpoint-url http://localhost:4566
+aws dynamodb list-tables --profile floci --endpoint-url http://localhost:4566
+aws sqs create-queue --profile floci --endpoint-url http://localhost:4566 --queue-name demo-queue
+```
+
+이 방식의 장점:
+
+- 실수로 실제 AWS `default` 프로필을 덮어쓰지 않는다.
+- 어떤 명령이 `floci`로 가는지 한눈에 보인다.
+- 팀 문서나 스크립트에 넣었을 때도 의도가 명확하다.
+
 ### 환경 변수 방식
 
 ```bash
@@ -251,6 +281,22 @@ aws sqs create-queue --profile floci --endpoint-url http://localhost:4566 --queu
 ```bash
 export AWS_PROFILE=floci
 export AWS_ENDPOINT=http://localhost:4566
+```
+
+주의:
+
+- 이 방식은 현재 셸 세션 전체에 영향을 줍니다.
+- 기존에 여러 AWS 계정/프로필을 오가며 작업하는 사용자라면, 세션 전역 변수 방식보다 명령마다 `--profile`과 `--endpoint-url`을 붙이는 방식이 더 안전합니다.
+- `AWS_PROFILE`이나 엔드포인트 관련 환경 변수를 해제하지 않은 채 다른 작업을 하면, 의도와 다른 대상으로 명령을 보낼 수 있습니다.
+
+예를 들어 작업이 끝난 뒤에는 다음처럼 원복할 수 있습니다.
+
+```bash
+unset AWS_PROFILE
+unset AWS_ENDPOINT
+unset AWS_ACCESS_KEY_ID
+unset AWS_SECRET_ACCESS_KEY
+unset AWS_DEFAULT_REGION
 ```
 
 ## SDK 연결 예시
