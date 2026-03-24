@@ -39,8 +39,6 @@ sequenceDiagram
 
 ## Workflow (Excalidraw)
 
-- [workflow.excalidraw](./workflow.excalidraw)
-
 ## Trade-off
 
 | 좋아지는 점 | 나빠지는 점 | 언제 적합한가 |
@@ -73,7 +71,7 @@ node apps/stream-inspector/api/server.mjs
 CLI:
 
 ```bash
-aws --profile floci --endpoint-url http://localhost:4566 kinesis list-streams
+bash ops/aws-local.sh kinesis list-streams
 ```
 
 Web UI:

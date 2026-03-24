@@ -38,8 +38,6 @@ sequenceDiagram
 
 ## Workflow (Excalidraw)
 
-- [workflow.excalidraw](./workflow.excalidraw)
-
 ## Trade-off
 
 | 좋아지는 점 | 나빠지는 점 | 언제 적합한가 |
@@ -72,8 +70,8 @@ node apps/todo-logs/api/server.mjs
 CLI:
 
 ```bash
-aws --profile floci --endpoint-url http://localhost:4566 dynamodb list-tables
-aws --profile floci --endpoint-url http://localhost:4566 logs describe-log-groups
+bash ops/aws-local.sh dynamodb list-tables
+bash ops/aws-local.sh logs describe-log-groups
 ```
 
 Web UI:

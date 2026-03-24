@@ -39,8 +39,6 @@ sequenceDiagram
 
 ## Workflow (Excalidraw)
 
-- [workflow.excalidraw](./workflow.excalidraw)
-
 ## Trade-off
 
 | 좋아지는 점 | 나빠지는 점 | 언제 적합한가 |
@@ -73,7 +71,7 @@ node apps/auth-portal/api/server.mjs
 CLI:
 
 ```bash
-aws --profile floci --endpoint-url http://localhost:4566 cognito-idp list-user-pools --max-results 10
+bash ops/aws-local.sh cognito-idp list-user-pools --max-results 10
 ```
 
 Web UI:

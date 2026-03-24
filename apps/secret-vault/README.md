@@ -38,8 +38,6 @@ sequenceDiagram
 
 ## Workflow (Excalidraw)
 
-- [workflow.excalidraw](./workflow.excalidraw)
-
 ## Trade-off
 
 | 좋아지는 점 | 나빠지는 점 | 언제 적합한가 |
@@ -72,8 +70,8 @@ node apps/secret-vault/api/server.mjs
 CLI:
 
 ```bash
-aws --profile floci --endpoint-url http://localhost:4566 kms list-keys
-aws --profile floci --endpoint-url http://localhost:4566 secretsmanager list-secrets
+bash ops/aws-local.sh kms list-keys
+bash ops/aws-local.sh secretsmanager list-secrets
 ```
 
 Web UI:

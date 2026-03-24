@@ -45,8 +45,7 @@
 | Docker | `20.10+` | `floci` 컨테이너 실행 |
 | Docker Compose | `v2+` | `floci` 실행 및 재기동 |
 | Node.js | `22+` | 각 hands-on API 서버 실행 |
-| npm | Node와 함께 설치 | `sharp` 같은 로컬 의존성 설치 |
-| npm | Node와 함께 설치 | 루트 스크립트 실행 |
+| npm | Node와 함께 설치 | 루트 스크립트 실행과 `sharp` 같은 로컬 의존성 설치 |
 | AWS CLI v2 | 최신 버전 권장 | `floci` endpoint 호출 |
 | Git | 최신 버전 권장 | 저장소 관리 |
 | curl | 최신 버전 권장 | health check, smoke 보조 |

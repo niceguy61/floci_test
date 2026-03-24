@@ -39,8 +39,6 @@ sequenceDiagram
 
 ## Workflow (Excalidraw)
 
-- [workflow.excalidraw](./workflow.excalidraw)
-
 ## Trade-off
 
 | 좋아지는 점 | 나빠지는 점 | 언제 적합한가 |
@@ -73,8 +71,8 @@ node apps/image-gallery/api/server.mjs
 CLI:
 
 ```bash
-aws --profile floci --endpoint-url http://localhost:4566 s3 ls
-aws --profile floci --endpoint-url http://localhost:4566 dynamodb describe-table --table-name image_metadata
+bash ops/aws-local.sh s3 ls
+bash ops/aws-local.sh dynamodb describe-table --table-name image_metadata
 ```
 
 Web UI:

@@ -41,8 +41,6 @@ sequenceDiagram
 
 ## Workflow (Excalidraw)
 
-- [workflow.excalidraw](./workflow.excalidraw)
-
 ## Trade-off
 
 | 좋아지는 점 | 나빠지는 점 | 언제 적합한가 |
@@ -75,8 +73,8 @@ node apps/alert-center/api/server.mjs
 CLI:
 
 ```bash
-aws --profile floci --endpoint-url http://localhost:4566 sns list-topics
-aws --profile floci --endpoint-url http://localhost:4566 sqs list-queues
+bash ops/aws-local.sh sns list-topics
+bash ops/aws-local.sh sqs list-queues
 ```
 
 Web UI:
