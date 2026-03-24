@@ -20,6 +20,22 @@ flowchart LR
     API --> KMS[KMS Key]
 ```
 
+## Mermaid 시퀀스
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant W as Web UI
+    participant A as API
+    participant K as KMS
+    participant S as Secrets Manager
+    U->>W: 비밀 생성
+    W->>A: 저장 요청
+    A->>K: 키 참조
+    A->>S: secret 저장
+    A-->>W: 마스킹된 결과 반환
+```
+
 ## Workflow (Excalidraw)
 
 - [workflow.excalidraw](./workflow.excalidraw)

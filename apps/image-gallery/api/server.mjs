@@ -58,6 +58,7 @@ async function readJsonBody(req) {
 }
 
 async function runAws(args) {
+  // 모든 S3/DynamoDB 명령이 로컬 floci와 격리된 자격증명을 쓰도록 강제한다.
   const finalArgs = ["--profile", profile, "--endpoint-url", endpoint, ...args];
   const env = {
     ...process.env,
@@ -82,6 +83,7 @@ async function runAwsJson(args) {
 }
 
 function decodeItem(item) {
+  // DynamoDB의 typed JSON을 UI가 바로 쓰기 쉬운 객체 형태로 한 번에 바꾼다.
   return {
     id: item.id?.S ?? "",
     title: item.title?.S ?? "",
@@ -140,6 +142,7 @@ async function getImage(id) {
 }
 
 async function uploadImage(payload) {
+  // 원본은 보존하고, 필요하면 표시용 이미지를 줄이고, thumbnail은 항상 만든다.
   const id = randomUUID();
   const safeName = String(payload.filename ?? "upload.bin").replace(/[^a-zA-Z0-9._-]/g, "-");
   const originalContentType = String(payload.contentType ?? "application/octet-stream");
@@ -278,6 +281,7 @@ async function sendStaticIndex(res) {
 }
 
 async function sendS3Object(res, key, contentType, filename) {
+  // bucket 공개/CORS 설정 없이 hands-on을 진행할 수 있게 앱 서버가 S3 객체를 프록시한다.
   const tmpDir = await mkdtemp(path.join(os.tmpdir(), "image-gallery-download-"));
   const outputPath = path.join(tmpDir, filename);
 
@@ -321,6 +325,7 @@ async function sendS3Object(res, key, contentType, filename) {
 const server = http.createServer(async (req, res) => {
   try {
     const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+    // 갤러리 UI와 이미지 API를 한 프로세스에 두어 흐름을 읽기 쉽게 만든다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendStaticIndex(res);

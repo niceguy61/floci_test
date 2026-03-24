@@ -25,6 +25,24 @@ flowchart LR
     Topic --> Events[SQS Event Queue]
 ```
 
+## Mermaid 시퀀스
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant A as API
+    participant D as DynamoDB
+    participant Q as SQS
+    participant W as Worker
+    participant T as SNS
+    U->>A: 주문 생성
+    A->>D: PENDING 저장
+    A->>Q: 처리 요청 enqueue
+    W->>Q: 메시지 consume
+    W->>D: 상태 업데이트
+    W->>T: 완료 이벤트 발행
+```
+
 ## Workflow (Excalidraw)
 
 - [workflow.excalidraw](./workflow.excalidraw)

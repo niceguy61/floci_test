@@ -20,6 +20,23 @@ flowchart LR
     API --> Reader[Shard Iterator / GetRecords]
 ```
 
+## Mermaid 시퀀스
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant W as Web UI
+    participant A as API
+    participant K as Kinesis
+    U->>W: 이벤트 입력
+    W->>A: publish 요청
+    A->>K: put-record
+    W->>A: 목록 조회
+    A->>K: get-shard-iterator
+    A->>K: get-records
+    A-->>W: 최근 레코드 반환
+```
+
 ## Workflow (Excalidraw)
 
 - [workflow.excalidraw](./workflow.excalidraw)

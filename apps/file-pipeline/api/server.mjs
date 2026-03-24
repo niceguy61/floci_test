@@ -39,6 +39,7 @@ async function readJsonBody(req) {
 }
 
 async function runAws(args) {
+  // 하나의 요청 흐름 안에서 S3, SQS, DynamoDB가 모두 같은 로컬 설정을 쓰게 한다.
   const env = {
     ...process.env,
     AWS_ACCESS_KEY_ID: accessKeyId,
@@ -82,6 +83,7 @@ async function listFiles() {
 }
 
 async function uploadFile(payload) {
+  // API는 파일 저장, 메타데이터 기록, 백그라운드 처리 enqueue까지만 담당한다.
   const filename = String(payload.filename ?? "").trim();
   const description = String(payload.description ?? "").trim();
   const contentType = String(payload.contentType ?? "application/octet-stream");
@@ -164,6 +166,7 @@ async function sendIndex(res) {
 const server = http.createServer(async (req, res) => {
   try {
     const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+    // 파일 처리 흐름을 따라가기 쉽게 UI와 API를 한 서버에서 제공한다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);

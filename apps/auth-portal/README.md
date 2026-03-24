@@ -19,6 +19,24 @@ flowchart LR
     API --> Cognito[Cognito User Pool / App Client]
 ```
 
+## Mermaid 시퀀스
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant W as Web UI
+    participant A as Auth API
+    participant C as Cognito
+    U->>W: 회원가입 입력
+    W->>A: signup
+    A->>C: sign-up
+    W->>A: confirm
+    A->>C: confirm-sign-up
+    W->>A: login
+    A->>C: initiate-auth
+    A-->>W: access token
+```
+
 ## Workflow (Excalidraw)
 
 - [workflow.excalidraw](./workflow.excalidraw)

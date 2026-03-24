@@ -35,6 +35,7 @@ async function readJsonBody(req) {
 }
 
 async function runAws(args) {
+  // 비밀과 KMS 호출은 절대로 실제 AWS를 치지 않도록 로컬 profile만 사용한다.
   const env = {
     ...process.env,
     AWS_ACCESS_KEY_ID: accessKeyId,
@@ -58,6 +59,7 @@ async function readRuntime() {
 }
 
 async function listSecrets() {
+  // 목록에서는 값을 숨기고, 상세 조회에서만 실제 secret 값을 보여준다.
   const data = await runAwsJson(["secretsmanager", "list-secrets"]);
   return (data.SecretList ?? []).map((item) => ({
     name: item.Name,
@@ -79,6 +81,7 @@ async function getSecret(name) {
 }
 
 async function createSecret(payload) {
+  // 공통 데모 KMS 키를 참조해 Secrets Manager에 비밀을 저장한다.
   const runtime = await readRuntime();
   const name = String(payload.name ?? "").trim();
   const description = String(payload.description ?? "").trim();
@@ -118,6 +121,7 @@ const server = http.createServer(async (req, res) => {
   try {
     const runtime = await readRuntime();
     const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+    // 저장/목록/상세 조회 흐름을 한눈에 보이게 하려고 UI와 API를 함께 제공한다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);

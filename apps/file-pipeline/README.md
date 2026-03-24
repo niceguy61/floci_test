@@ -26,6 +26,26 @@ flowchart LR
     Worker --> DDB
 ```
 
+## Mermaid 시퀀스
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant W as Web UI
+    participant A as API
+    participant S as S3
+    participant D as DynamoDB
+    participant Q as SQS
+    participant WK as Worker
+    U->>W: 파일 업로드
+    W->>A: 업로드 요청
+    A->>S: 원본 저장
+    A->>D: QUEUED 상태 저장
+    A->>Q: 처리 요청 enqueue
+    WK->>Q: 메시지 consume
+    WK->>D: PROCESSING / COMPLETED 갱신
+```
+
 ## Workflow (Excalidraw)
 
 - [workflow.excalidraw](./workflow.excalidraw)

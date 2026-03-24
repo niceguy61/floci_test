@@ -20,6 +20,22 @@ flowchart LR
     API --> Logs[CloudWatch Logs]
 ```
 
+## Mermaid 시퀀스
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant W as Web UI
+    participant A as API
+    participant D as DynamoDB
+    participant L as CloudWatch Logs
+    U->>W: 할 일 생성/완료
+    W->>A: API 요청
+    A->>D: 상태 저장
+    A->>L: 로그 기록
+    A-->>W: 최신 상태 반환
+```
+
 ## Workflow (Excalidraw)
 
 - [workflow.excalidraw](./workflow.excalidraw)

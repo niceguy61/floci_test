@@ -18,6 +18,22 @@ flowchart LR
     API --> SSM[SSM Parameter Store]
 ```
 
+## Mermaid 시퀀스
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant W as Web UI
+    participant A as API
+    participant S as SSM
+    U->>W: 플래그 생성/수정
+    W->>A: 저장 요청
+    A->>S: put-parameter
+    A-->>W: 결과 반환
+    W->>A: 목록 조회
+    A->>S: get-parameters-by-path
+```
+
 ## Workflow (Excalidraw)
 
 - [workflow.excalidraw](./workflow.excalidraw)

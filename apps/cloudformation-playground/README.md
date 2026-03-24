@@ -20,6 +20,22 @@ flowchart LR
     CFN --> S3[S3 Bucket Resource]
 ```
 
+## Mermaid 시퀀스
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant W as Web UI
+    participant A as API
+    participant C as CloudFormation
+    participant S as S3
+    U->>W: 스택 이름 / 버킷 이름 입력
+    W->>A: create-stack 요청
+    A->>C: template 기반 stack 생성
+    C->>S: bucket 생성
+    A-->>W: stack 생성 요청 결과 반환
+```
+
 ## Workflow (Excalidraw)
 
 - [workflow.excalidraw](./workflow.excalidraw)

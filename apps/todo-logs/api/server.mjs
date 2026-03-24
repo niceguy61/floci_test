@@ -38,6 +38,7 @@ async function readJsonBody(req) {
 }
 
 async function runAws(args) {
+  // DynamoDB와 CloudWatch Logs 호출이 모두 같은 로컬 endpoint를 쓰도록 감싼다.
   const env = {
     ...process.env,
     AWS_ACCESS_KEY_ID: accessKeyId,
@@ -84,6 +85,7 @@ async function getTodo(id) {
 }
 
 async function getSequenceToken() {
+  // CloudWatch Logs는 같은 스트림에 쓸 때 최신 sequence token이 필요하다.
   const data = await runAwsJson([
     "logs",
     "describe-log-streams",
@@ -98,6 +100,7 @@ async function getSequenceToken() {
 }
 
 async function putLog(message) {
+  // UI에서 일어난 동작과 로그를 연결해 볼 수 있게 명시적인 메시지를 남긴다.
   const token = await getSequenceToken();
   const args = [
     "logs",
@@ -116,6 +119,7 @@ async function putLog(message) {
 }
 
 async function createTodo(payload) {
+  // 할 일 상태를 먼저 저장하고, 그 다음 로그에 상태 변화를 기록한다.
   const title = String(payload.title ?? "").trim();
   if (!title) {
     throw new Error("invalid_payload");
@@ -204,6 +208,7 @@ async function sendIndex(res) {
 const server = http.createServer(async (req, res) => {
   try {
     const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+    // CRUD 상태와 운영 로그를 한 번에 이해할 수 있게 UI와 API를 같은 서버에 둔다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);

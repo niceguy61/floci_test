@@ -38,6 +38,7 @@ async function readJsonBody(req) {
 }
 
 async function runAws(args) {
+  // 사용자의 실제 AWS 설정이 아니라 로컬 floci profile로만 인증 관련 명령을 보낸다.
   const env = {
     ...process.env,
     AWS_ACCESS_KEY_ID: accessKeyId,
@@ -64,6 +65,7 @@ async function sendIndex(res) {
 }
 
 async function signup(payload) {
+  // hands-on 흐름은 회원가입과 확인 단계를 분리해서 보여준다.
   const runtime = await readAuthRuntime();
   const username = String(payload.username ?? "").trim();
   const password = String(payload.password ?? "").trim();
@@ -145,6 +147,7 @@ async function login(payload) {
 }
 
 async function profileFromToken(token) {
+  // 보호된 API가 access token을 사용하는 방식을 그대로 재현한다.
   const data = await runAwsJson([
     "cognito-idp",
     "get-user",
@@ -166,6 +169,7 @@ const server = http.createServer(async (req, res) => {
   try {
     const runtime = await readAuthRuntime();
     const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+    // 데모를 단순하게 유지하기 위해 UI 제공과 Cognito 호출 프록시를 한 서버가 맡는다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);

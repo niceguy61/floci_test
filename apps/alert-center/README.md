@@ -21,6 +21,24 @@ flowchart LR
     Topic --> QB[SQS Subscriber B]
 ```
 
+## Mermaid 시퀀스
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant W as Web UI
+    participant A as API
+    participant T as SNS
+    participant QA as Queue A
+    participant QB as Queue B
+    U->>W: 알림 입력
+    W->>A: publish 요청
+    A->>T: 메시지 발행
+    T->>QA: fan-out
+    T->>QB: fan-out
+    A-->>W: 발행 결과 반환
+```
+
 ## Workflow (Excalidraw)
 
 - [workflow.excalidraw](./workflow.excalidraw)

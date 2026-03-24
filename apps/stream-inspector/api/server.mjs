@@ -35,6 +35,7 @@ async function readJsonBody(req) {
 }
 
 async function runAws(args) {
+  // 다른 hands-on과 같은 방식으로 Kinesis도 로컬 profile/endpoint를 사용한다.
   const env = {
     ...process.env,
     AWS_ACCESS_KEY_ID: accessKeyId,
@@ -54,6 +55,7 @@ async function runAwsJson(args) {
 }
 
 async function getStreamInfo() {
+  // stream 상태를 노출해 ACTIVE 상태와 읽기 가능 상태를 연결해서 이해하게 한다.
   const data = await runAwsJson(["kinesis", "describe-stream", "--stream-name", stream]);
   return {
     streamName: data.StreamDescription?.StreamName ?? stream,
@@ -89,6 +91,7 @@ async function publishRecord(payload) {
 }
 
 async function listRecords() {
+  // 매번 전체 흐름을 보기 쉽게 TRIM_HORIZON부터 읽어 최근 레코드를 보여준다.
   const desc = await runAwsJson(["kinesis", "describe-stream", "--stream-name", stream]);
   const shardId = desc.StreamDescription?.Shards?.[0]?.ShardId;
   if (!shardId) {
@@ -129,6 +132,7 @@ async function sendIndex(res) {
 const server = http.createServer(async (req, res) => {
   try {
     const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+    // 생산자/소비자 흐름을 가볍게 실험할 수 있게 정적 페이지와 API를 한 서버에 둔다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);

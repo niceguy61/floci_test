@@ -37,6 +37,7 @@ async function readJsonBody(req) {
 }
 
 async function runAws(args) {
+  // 모든 hands-on이 같은 로컬 endpoint/profile을 쓰도록 AWS CLI 호출을 감싼다.
   const env = {
     ...process.env,
     AWS_ACCESS_KEY_ID: accessKeyId,
@@ -66,6 +67,7 @@ async function getQueueUrl(name) {
 }
 
 async function publishAlert(payload) {
+  // 알림은 한 번만 발행하고, 실제 fan-out은 SNS가 두 구독 큐로 나눠서 처리한다.
   const title = String(payload.title ?? "").trim();
   const body = String(payload.body ?? "").trim();
   if (!title || !body) {
@@ -91,6 +93,7 @@ async function publishAlert(payload) {
 }
 
 async function receiveQueueMessages(queueName) {
+  // UI에서 반복 조회할 수 있게 메시지를 삭제하지 않고 조회만 한다.
   const queueUrl = await getQueueUrl(queueName);
   const data = await runAwsJson([
     "sqs",
@@ -131,6 +134,7 @@ async function sendIndex(res) {
 const server = http.createServer(async (req, res) => {
   try {
     const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+    // hands-on을 단일 프로세스로 이해할 수 있게 정적 UI와 API를 한 서버에 묶는다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);

@@ -41,6 +41,7 @@ async function readJsonBody(req) {
 }
 
 async function runAws(args) {
+  // 큐, 토픽, 테이블 관련 호출이 항상 로컬 floci 환경을 향하도록 감싼다.
   const env = {
     ...process.env,
     AWS_ACCESS_KEY_ID: accessKeyId,
@@ -61,6 +62,7 @@ async function runAwsJson(args) {
 }
 
 function decodeItem(item) {
+  // DynamoDB attribute-value 형식을 UI가 쓰는 주문 객체로 바꾼다.
   return {
     id: item.id?.S ?? "",
     customerName: item.customerName?.S ?? "",
@@ -90,6 +92,7 @@ async function getOrder(id) {
 }
 
 async function createOrder(payload) {
+  // API는 빠르게 PENDING 주문만 저장하고, 실제 처리는 큐로 넘긴다.
   const customerName = String(payload.customerName ?? "").trim();
   const itemName = String(payload.itemName ?? "").trim();
   const quantity = Number(payload.quantity ?? 1);
@@ -143,6 +146,7 @@ async function createOrder(payload) {
 }
 
 async function listEvents() {
+  // fan-out 결과를 대시보드에서 반복 확인할 수 있게 이벤트 메시지를 삭제하지 않고 읽는다.
   const queueUrl = (
     await runAwsJson(["sqs", "get-queue-url", "--queue-name", eventQueue])
   ).QueueUrl;
@@ -185,6 +189,7 @@ async function sendIndex(res) {
 const server = http.createServer(async (req, res) => {
   try {
     const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+    // 학습용 로컬 루프를 단순하게 유지하려고 UI와 주문 API를 한 서버에 둔다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);

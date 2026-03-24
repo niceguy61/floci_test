@@ -35,6 +35,7 @@ async function readJsonBody(req) {
 }
 
 async function runAws(args) {
+  // Parameter Store 명령은 모두 격리된 로컬 AWS 설정을 통해 보낸다.
   const env = {
     ...process.env,
     AWS_ACCESS_KEY_ID: accessKeyId,
@@ -54,6 +55,7 @@ async function runAwsJson(args) {
 }
 
 async function listFlags() {
+  // 한 앱의 플래그만 보이도록 path prefix를 고정한다.
   const data = await runAwsJson([
     "ssm",
     "get-parameters-by-path",
@@ -86,6 +88,7 @@ async function getFlag(name) {
 }
 
 async function putFlag(payload) {
+  // feature flag는 같은 이름으로 값을 바꾸는 경우가 많아서 overwrite를 허용한다.
   const name = String(payload.name ?? "").trim();
   const value = String(payload.value ?? "").trim();
   if (!name) {
@@ -120,6 +123,7 @@ async function sendIndex(res) {
 const server = http.createServer(async (req, res) => {
   try {
     const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+    // 작은 대시보드와 Parameter Store API를 한 프로세스에서 제공해 이해를 단순화한다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);

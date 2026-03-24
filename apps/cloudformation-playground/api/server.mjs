@@ -35,6 +35,7 @@ async function readJsonBody(req) {
 }
 
 async function runAws(args) {
+  // CloudFormation 호출이 항상 로컬 floci endpoint를 보도록 감싼다.
   const env = {
     ...process.env,
     AWS_ACCESS_KEY_ID: accessKeyId,
@@ -73,6 +74,7 @@ async function getStack(name) {
 }
 
 async function createStack(payload) {
+  // 사용자가 스택 동작에 집중하도록 가장 작은 템플릿을 즉석에서 만든다.
   const stackName = String(payload.stackName ?? "").trim();
   const bucketName = String(payload.bucketName ?? "").trim();
   if (!stackName || !bucketName) {
@@ -112,6 +114,7 @@ async function sendIndex(res) {
 const server = http.createServer(async (req, res) => {
   try {
     const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+    // IaC 데모를 쉽게 실행할 수 있게 정적 UI와 stack API를 한 서버에 둔다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);

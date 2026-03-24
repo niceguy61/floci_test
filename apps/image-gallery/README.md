@@ -21,6 +21,22 @@ flowchart LR
     API --> DDB[DynamoDB Metadata]
 ```
 
+## Mermaid 시퀀스
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant W as Web UI
+    participant A as API Server
+    participant S as S3
+    participant D as DynamoDB
+    U->>W: 이미지 업로드
+    W->>A: 업로드 요청
+    A->>S: 원본 / 표시용 / thumbnail 저장
+    A->>D: 메타데이터 저장
+    A-->>W: 업로드 결과 반환
+```
+
 ## Workflow (Excalidraw)
 
 - [workflow.excalidraw](./workflow.excalidraw)
