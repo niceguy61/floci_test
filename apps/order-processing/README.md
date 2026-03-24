@@ -47,7 +47,7 @@ sequenceDiagram
 
 [draw.io source](./assets/order-processing-architecture.drawio)
 
-![order-processing AWS architecture](./assets/order-processing-architecture.svg)
+![order-processing AWS architecture](./assets/order-processing-architecture.gif)
 
 ## Trade-off
 

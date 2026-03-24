@@ -41,7 +41,7 @@ sequenceDiagram
 
 [draw.io source](./assets/image-gallery-architecture.drawio)
 
-![image-gallery AWS architecture](./assets/image-gallery-architecture.svg)
+![image-gallery AWS architecture](./assets/image-gallery-architecture.gif)
 
 ## Trade-off
 

@@ -41,7 +41,7 @@ sequenceDiagram
 
 [draw.io source](./assets/auth-portal-architecture.drawio)
 
-![auth-portal AWS architecture](./assets/auth-portal-architecture.svg)
+![auth-portal AWS architecture](./assets/auth-portal-architecture.gif)
 
 ## Trade-off
 

@@ -75,9 +75,16 @@ npm run all10:smoke
 
 AWS 공식 아이콘 기반 draw.io 다이어그램:
 
-- [image-gallery SVG](./apps/image-gallery/assets/image-gallery-architecture.svg) / [draw.io source](./apps/image-gallery/assets/image-gallery-architecture.drawio)
-- [order-processing SVG](./apps/order-processing/assets/order-processing-architecture.svg) / [draw.io source](./apps/order-processing/assets/order-processing-architecture.drawio)
-- [auth-portal SVG](./apps/auth-portal/assets/auth-portal-architecture.svg) / [draw.io source](./apps/auth-portal/assets/auth-portal-architecture.drawio)
+- [image-gallery GIF](./apps/image-gallery/assets/image-gallery-architecture.gif) / [draw.io source](./apps/image-gallery/assets/image-gallery-architecture.drawio)
+- [order-processing GIF](./apps/order-processing/assets/order-processing-architecture.gif) / [draw.io source](./apps/order-processing/assets/order-processing-architecture.drawio)
+- [auth-portal GIF](./apps/auth-portal/assets/auth-portal-architecture.gif) / [draw.io source](./apps/auth-portal/assets/auth-portal-architecture.drawio)
+- [todo-logs GIF](./apps/todo-logs/assets/todo-logs-architecture.gif) / [draw.io source](./apps/todo-logs/assets/todo-logs-architecture.drawio)
+- [alert-center GIF](./apps/alert-center/assets/alert-center-architecture.gif) / [draw.io source](./apps/alert-center/assets/alert-center-architecture.drawio)
+- [file-pipeline GIF](./apps/file-pipeline/assets/file-pipeline-architecture.gif) / [draw.io source](./apps/file-pipeline/assets/file-pipeline-architecture.drawio)
+- [secret-vault GIF](./apps/secret-vault/assets/secret-vault-architecture.gif) / [draw.io source](./apps/secret-vault/assets/secret-vault-architecture.drawio)
+- [feature-flags GIF](./apps/feature-flags/assets/feature-flags-architecture.gif) / [draw.io source](./apps/feature-flags/assets/feature-flags-architecture.drawio)
+- [stream-inspector GIF](./apps/stream-inspector/assets/stream-inspector-architecture.gif) / [draw.io source](./apps/stream-inspector/assets/stream-inspector-architecture.drawio)
+- [cloudformation-playground GIF](./apps/cloudformation-playground/assets/cloudformation-playground-architecture.gif) / [draw.io source](./apps/cloudformation-playground/assets/cloudformation-playground-architecture.drawio)
 
 생성 스크립트: `python3 scripts/generate_architecture_diagrams.py`
 

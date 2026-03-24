@@ -36,7 +36,11 @@ sequenceDiagram
     A-->>W: 최신 상태 반환
 ```
 
-## Workflow (Excalidraw)
+## Draw.io (AWS 공식 아이콘)
+
+[draw.io source](./assets/todo-logs-architecture.drawio)
+
+![todo-logs AWS architecture](./assets/todo-logs-architecture.gif)
 
 ## Trade-off
 

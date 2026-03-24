@@ -39,7 +39,11 @@ sequenceDiagram
     A-->>W: 발행 결과 반환
 ```
 
-## Workflow (Excalidraw)
+## Draw.io (AWS 공식 아이콘)
+
+[draw.io source](./assets/alert-center-architecture.drawio)
+
+![alert-center AWS architecture](./assets/alert-center-architecture.gif)
 
 ## Trade-off
 

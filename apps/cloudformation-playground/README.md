@@ -36,7 +36,11 @@ sequenceDiagram
     A-->>W: stack 생성 요청 결과 반환
 ```
 
-## Workflow (Excalidraw)
+## Draw.io (AWS 공식 아이콘)
+
+[draw.io source](./assets/cloudformation-playground-architecture.drawio)
+
+![cloudformation-playground AWS architecture](./assets/cloudformation-playground-architecture.gif)
 
 ## Trade-off
 

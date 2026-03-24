@@ -46,7 +46,11 @@ sequenceDiagram
     WK->>D: PROCESSING / COMPLETED 갱신
 ```
 
-## Workflow (Excalidraw)
+## Draw.io (AWS 공식 아이콘)
+
+[draw.io source](./assets/file-pipeline-architecture.drawio)
+
+![file-pipeline AWS architecture](./assets/file-pipeline-architecture.gif)
 
 ## Trade-off
 

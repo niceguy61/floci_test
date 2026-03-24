@@ -36,7 +36,11 @@ sequenceDiagram
     A-->>W: 마스킹된 결과 반환
 ```
 
-## Workflow (Excalidraw)
+## Draw.io (AWS 공식 아이콘)
+
+[draw.io source](./assets/secret-vault-architecture.drawio)
+
+![secret-vault AWS architecture](./assets/secret-vault-architecture.gif)
 
 ## Trade-off
 

@@ -34,7 +34,11 @@ sequenceDiagram
     A->>S: get-parameters-by-path
 ```
 
-## Workflow (Excalidraw)
+## Draw.io (AWS 공식 아이콘)
+
+[draw.io source](./assets/feature-flags-architecture.drawio)
+
+![feature-flags AWS architecture](./assets/feature-flags-architecture.gif)
 
 ## Trade-off
 

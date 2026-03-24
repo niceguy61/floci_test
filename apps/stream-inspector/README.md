@@ -37,7 +37,11 @@ sequenceDiagram
     A-->>W: 최근 레코드 반환
 ```
 
-## Workflow (Excalidraw)
+## Draw.io (AWS 공식 아이콘)
+
+[draw.io source](./assets/stream-inspector-architecture.drawio)
+
+![stream-inspector AWS architecture](./assets/stream-inspector-architecture.gif)
 
 ## Trade-off
 
