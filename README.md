@@ -14,7 +14,7 @@
 
 | floci | LocalStack | AWS |
 |---|---|---|
-| <img src="./assets/floci-icon.svg" alt="floci icon" width="96" /> | <img src="./assets/localstack-icon.svg" alt="LocalStack icon" width="96" /> | <img src="./assets/aws-icon.svg" alt="AWS icon" width="96" /> |
+| <img src="https://raw.githubusercontent.com/hectorvent/floci/main/logo.svg" alt="floci icon" width="96" /> | <img src="https://github.com/localstack.png?size=200" alt="LocalStack icon" width="96" /> | <img src="https://github.com/aws.png?size=200" alt="AWS icon" width="96" /> |
 | 계정 없이 빠르게 시작하는 로컬 AWS 에뮬레이터 | 널리 알려진 대표 로컬 AWS 에뮬레이터 | 실제 관리형 클라우드 환경 |
 
 ## 왜 floci를 쓰는가
