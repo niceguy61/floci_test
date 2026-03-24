@@ -43,7 +43,11 @@ sequenceDiagram
     W->>T: 완료 이벤트 발행
 ```
 
-## Workflow (Excalidraw)
+## Draw.io (AWS 공식 아이콘)
+
+[draw.io source](./assets/order-processing-architecture.drawio)
+
+![order-processing AWS architecture](./assets/order-processing-architecture.svg)
 
 ## Trade-off
 

@@ -37,7 +37,11 @@ sequenceDiagram
     A-->>W: 업로드 결과 반환
 ```
 
-## Workflow (Excalidraw)
+## Draw.io (AWS 공식 아이콘)
+
+[draw.io source](./assets/image-gallery-architecture.drawio)
+
+![image-gallery AWS architecture](./assets/image-gallery-architecture.svg)
 
 ## Trade-off
 

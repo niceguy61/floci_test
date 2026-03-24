@@ -73,6 +73,14 @@ npm run priority3:smoke
 npm run all10:smoke
 ```
 
+AWS 공식 아이콘 기반 draw.io 다이어그램:
+
+- [image-gallery SVG](./apps/image-gallery/assets/image-gallery-architecture.svg) / [draw.io source](./apps/image-gallery/assets/image-gallery-architecture.drawio)
+- [order-processing SVG](./apps/order-processing/assets/order-processing-architecture.svg) / [draw.io source](./apps/order-processing/assets/order-processing-architecture.drawio)
+- [auth-portal SVG](./apps/auth-portal/assets/auth-portal-architecture.svg) / [draw.io source](./apps/auth-portal/assets/auth-portal-architecture.drawio)
+
+생성 스크립트: `python3 scripts/generate_architecture_diagrams.py`
+
 ## Known Limitations
 
 현재 이 저장소는 `floci`가 실제로 잘 붙는 서비스 중심으로 hands-on을 구성했습니다. 아래는 아직 보류된 항목입니다.
@@ -98,7 +106,7 @@ npm run all10:smoke
 - 각 앱 README에
   - AWS 참고 링크
   - Mermaid 아키텍처
-  - Excalidraw 워크플로
+  - Draw.io (AWS 공식 아이콘) 다이어그램
   - Trade-off 표
   - 단계별 hands-on 가이드
   - 중간 테스트와 최종 smoke 절차

@@ -37,7 +37,11 @@ sequenceDiagram
     A-->>W: access token
 ```
 
-## Workflow (Excalidraw)
+## Draw.io (AWS 공식 아이콘)
+
+[draw.io source](./assets/auth-portal-architecture.drawio)
+
+![auth-portal AWS architecture](./assets/auth-portal-architecture.svg)
 
 ## Trade-off
 
