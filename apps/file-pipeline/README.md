@@ -73,6 +73,48 @@ Web UI:
 - 상태가 `QUEUED -> PROCESSING -> COMPLETED`로 바뀌는지 본다
 - 처리 바이트가 0보다 커졌는지 확인한다
 
+## 리소스 상태 확인 (CLI)
+
+### S3 bucket 확인
+
+```bash
+bash ops/aws-local.sh s3 ls
+```
+
+예시 출력:
+
+```text
+2026-03-24 14:03:33 file-pipeline-bucket
+```
+
+### 큐 확인
+
+```bash
+bash ops/aws-local.sh sqs list-queues
+```
+
+예시 출력:
+
+```json
+{
+  "QueueUrls": [
+    "http://localhost:4566/000000000000/file-pipeline-queue"
+  ]
+}
+```
+
+### 작업 상태 테이블 확인
+
+```bash
+bash ops/aws-local.sh dynamodb describe-table --table-name file_pipeline_jobs
+```
+
+이렇게 해석합니다:
+
+- bucket은 원본 파일 저장소
+- queue는 처리 요청 전달용
+- table은 처리 상태 추적용입니다
+
 ### 4. 최종 검증
 
 ```bash

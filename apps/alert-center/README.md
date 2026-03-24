@@ -66,6 +66,48 @@ Web UI:
 - 제목과 본문을 입력해 발행한다
 - Subscriber A/B 양쪽 패널에 메시지가 모두 들어오는지 본다
 
+## 리소스 상태 확인 (CLI)
+
+### SNS topic 확인
+
+```bash
+bash ops/aws-local.sh sns list-topics
+```
+
+예시 출력:
+
+```json
+{
+  "Topics": [
+    {
+      "TopicArn": "arn:aws:sns:us-east-1:000000000000:alert-center-topic"
+    }
+  ]
+}
+```
+
+### SQS subscriber 큐 확인
+
+```bash
+bash ops/aws-local.sh sqs list-queues
+```
+
+예시 출력:
+
+```json
+{
+  "QueueUrls": [
+    "http://localhost:4566/000000000000/alert-center-subscriber-a",
+    "http://localhost:4566/000000000000/alert-center-subscriber-b"
+  ]
+}
+```
+
+이렇게 해석합니다:
+
+- topic 1개, subscriber queue 2개가 보여야 정상입니다.
+- publish 후 두 큐에 모두 메시지가 들어가면 fan-out이 정상입니다.
+
 ### 4. 최종 검증
 
 ```bash

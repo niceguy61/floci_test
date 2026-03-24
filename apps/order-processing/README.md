@@ -72,6 +72,74 @@ Web UI:
 - 상태가 `PENDING`에서 `COMPLETED`로 바뀌는지 본다
 - 이벤트 패널에 fan-out 결과가 보이는지 확인한다
 
+## 리소스 상태 확인 (CLI)
+
+### 큐 목록 확인
+
+```bash
+bash ops/aws-local.sh sqs list-queues
+```
+
+예시 출력:
+
+```json
+{
+  "QueueUrls": [
+    "http://localhost:4566/000000000000/order-processing-queue",
+    "http://localhost:4566/000000000000/order-processing-events"
+  ]
+}
+```
+
+이렇게 해석합니다:
+
+- `order-processing-queue`는 주문 처리용 큐입니다.
+- `order-processing-events`는 SNS fan-out 결과를 확인하는 이벤트 큐입니다.
+
+### 토픽 확인
+
+```bash
+bash ops/aws-local.sh sns list-topics
+```
+
+예시 출력:
+
+```json
+{
+  "Topics": [
+    {
+      "TopicArn": "arn:aws:sns:us-east-1:000000000000:order-processing-topic"
+    }
+  ]
+}
+```
+
+이렇게 해석합니다:
+
+- `order-processing-topic`이 보이면 상태 변경 fan-out 지점이 준비된 상태입니다.
+
+### 주문 테이블 확인
+
+```bash
+bash ops/aws-local.sh dynamodb describe-table --table-name orders
+```
+
+예시 출력:
+
+```json
+{
+  "Table": {
+    "TableName": "orders",
+    "TableStatus": "ACTIVE",
+    "ItemCount": 5
+  }
+}
+```
+
+이렇게 해석합니다:
+
+- `ItemCount`는 현재 저장된 주문 수입니다.
+
 ### 4. 최종 검증
 
 ```bash

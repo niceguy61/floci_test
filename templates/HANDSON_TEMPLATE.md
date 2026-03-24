@@ -63,6 +63,23 @@ flowchart LR
 apps/{slug}/checks/smoke.sh
 ```
 
+## 리소스 상태 확인 (CLI)
+
+```bash
+bash ops/aws-local.sh {service} {command}
+```
+
+예시 출력:
+
+```json
+{}
+```
+
+이렇게 해석합니다:
+
+- {무엇이 보이면 정상인지}
+- {무엇이 부족하면 비정상인지}
+
 ## 자주 틀리는 포인트
 
 - `--endpoint-url http://localhost:4566` 누락

@@ -66,6 +66,50 @@ Web UI:
 - 목록에는 마스킹된 값만 보이는지 본다
 - 상세 조회에서 실제 값이 보이는지 확인한다
 
+## 리소스 상태 확인 (CLI)
+
+### KMS key 확인
+
+```bash
+bash ops/aws-local.sh kms list-keys
+```
+
+예시 출력:
+
+```json
+{
+  "Keys": [
+    {
+      "KeyArn": "arn:aws:kms:us-east-1:000000000000:key/..."
+    }
+  ]
+}
+```
+
+### Secret 목록 확인
+
+```bash
+bash ops/aws-local.sh secretsmanager list-secrets
+```
+
+예시 출력:
+
+```json
+{
+  "SecretList": [
+    {
+      "Name": "smoke-secret-123"
+    }
+  ]
+}
+```
+
+이렇게 해석합니다:
+
+- key가 하나 이상 보이면 KMS 준비 완료
+- SecretList에 이름이 보이면 저장 성공
+- 실제 값은 `get-secret-value` 또는 앱 상세 조회에서 확인합니다
+
 ### 4. 최종 검증
 
 ```bash

@@ -182,11 +182,13 @@ bash ops/verify-floci.sh
 
 - endpoint: `http://localhost:4566`
 - profile: `floci`
+- 권장 실행기: `bash ops/aws-local.sh`
 
 예:
 
 ```bash
-aws --profile floci --endpoint-url http://localhost:4566 s3 ls
+bash ops/aws-local.sh s3 ls
+bash ops/aws-local.sh dynamodb list-tables
 ```
 
 ## 전체 검증

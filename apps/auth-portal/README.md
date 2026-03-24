@@ -65,6 +65,58 @@ Web UI:
 - 로그인
 - 프로필 조회
 
+## 리소스 상태 확인 (CLI)
+
+### User Pool 목록 확인
+
+```bash
+bash ops/aws-local.sh cognito-idp list-user-pools --max-results 10
+```
+
+예시 출력:
+
+```json
+{
+  "UserPools": [
+    {
+      "Name": "auth-portal-users",
+      "Id": "us-east-1_xxxxxxxx"
+    }
+  ]
+}
+```
+
+이렇게 해석합니다:
+
+- `auth-portal-users`가 보이면 user pool 생성은 정상입니다.
+
+### App Client 확인
+
+```bash
+bash ops/aws-local.sh cognito-idp describe-user-pool-client --user-pool-id <USER_POOL_ID> --client-id <CLIENT_ID>
+```
+
+예시 출력:
+
+```json
+{
+  "UserPoolClient": {
+    "ClientId": "abcd1234",
+    "ClientName": "auth-portal-web"
+  }
+}
+```
+
+이렇게 해석합니다:
+
+- app client가 있어야 로그인과 토큰 발급이 가능합니다.
+
+실제 `USER_POOL_ID`, `CLIENT_ID`는 아래 파일에서 확인할 수 있습니다.
+
+```bash
+cat apps/auth-portal/.runtime/cognito.json
+```
+
 ### 4. 최종 검증
 
 ```bash

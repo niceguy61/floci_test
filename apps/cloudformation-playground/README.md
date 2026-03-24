@@ -64,6 +64,38 @@ Web UI:
 - 스택 이름과 버킷 이름을 넣어 생성한다
 - 스택 상태가 `CREATE_COMPLETE`로 가는지 본다
 
+## 리소스 상태 확인 (CLI)
+
+### 스택 목록 확인
+
+```bash
+bash ops/aws-local.sh cloudformation list-stacks
+```
+
+예시 출력:
+
+```json
+{
+  "StackSummaries": [
+    {
+      "StackName": "smoke-cfn-123",
+      "StackStatus": "CREATE_COMPLETE"
+    }
+  ]
+}
+```
+
+### 생성 리소스 확인
+
+```bash
+bash ops/aws-local.sh s3 ls
+```
+
+이렇게 해석합니다:
+
+- 스택이 `CREATE_COMPLETE`면 템플릿 적용은 성공입니다.
+- 대응하는 bucket 이름이 S3 목록에 보이면 실제 리소스도 생성된 것입니다.
+
 ### 4. 최종 검증
 
 ```bash

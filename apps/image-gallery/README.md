@@ -67,6 +67,48 @@ Web UI:
 - 목록 카드에 thumbnail이 보이는지 확인한다
 - 상세 화면에서 표시용 이미지와 원본 링크를 확인한다
 
+## 리소스 상태 확인 (CLI)
+
+### S3 bucket 확인
+
+```bash
+bash ops/aws-local.sh s3 ls
+```
+
+예시 출력:
+
+```text
+2026-03-24 14:02:35 image-gallery-bucket
+```
+
+이렇게 해석합니다:
+
+- `image-gallery-bucket`이 보이면 bucket 생성은 정상입니다.
+- 업로드 후에는 이 bucket 안에 원본, 표시용, thumbnail 객체가 들어갑니다.
+
+### DynamoDB 테이블 확인
+
+```bash
+bash ops/aws-local.sh dynamodb describe-table --table-name image_metadata
+```
+
+예시 출력:
+
+```json
+{
+  "Table": {
+    "TableName": "image_metadata",
+    "TableStatus": "ACTIVE",
+    "ItemCount": 3
+  }
+}
+```
+
+이렇게 해석합니다:
+
+- `TableStatus`가 `ACTIVE`면 테이블은 준비된 상태입니다.
+- `ItemCount`는 현재 메타데이터 개수입니다.
+
 ### 4. 최종 검증
 
 ```bash

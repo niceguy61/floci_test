@@ -66,6 +66,49 @@ Web UI:
 - 완료 토글 후 상태가 바뀌는지 본다
 - 로그 패널에 이벤트가 남는지 확인한다
 
+## 리소스 상태 확인 (CLI)
+
+### DynamoDB 테이블 확인
+
+```bash
+bash ops/aws-local.sh dynamodb describe-table --table-name todos
+```
+
+예시 출력:
+
+```json
+{
+  "Table": {
+    "TableName": "todos",
+    "TableStatus": "ACTIVE",
+    "ItemCount": 2
+  }
+}
+```
+
+### CloudWatch Logs 확인
+
+```bash
+bash ops/aws-local.sh logs describe-log-groups
+bash ops/aws-local.sh logs get-log-events --log-group-name /floci/todo-logs --log-stream-name todo-api
+```
+
+예시 출력:
+
+```json
+{
+  "events": [
+    { "message": "[TODO_CREATED] id=..." },
+    { "message": "[TODO_TOGGLED] id=... completed=true" }
+  ]
+}
+```
+
+이렇게 해석합니다:
+
+- 로그 그룹이 보이면 logging 경로는 준비된 상태입니다.
+- `TODO_CREATED`, `TODO_TOGGLED`가 보이면 상태 변경 로그도 정상입니다.
+
 ### 4. 최종 검증
 
 ```bash

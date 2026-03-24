@@ -64,6 +64,35 @@ Web UI:
 - partition key와 payload를 넣어 발행한다
 - 최근 레코드 목록에서 sequence number와 payload가 보이는지 확인한다
 
+## 리소스 상태 확인 (CLI)
+
+### Stream 목록 확인
+
+```bash
+bash ops/aws-local.sh kinesis list-streams
+```
+
+예시 출력:
+
+```json
+{
+  "StreamNames": [
+    "stream-inspector-stream"
+  ]
+}
+```
+
+### Stream 상세 확인
+
+```bash
+bash ops/aws-local.sh kinesis describe-stream --stream-name stream-inspector-stream
+```
+
+이렇게 해석합니다:
+
+- `StreamStatus`가 `ACTIVE`면 스트림은 준비된 상태입니다.
+- shard가 1개 보이면 현재 예제 기준 구성과 맞습니다.
+
 ### 4. 최종 검증
 
 ```bash

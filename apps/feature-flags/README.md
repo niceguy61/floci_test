@@ -63,6 +63,30 @@ Web UI:
 - 값을 다시 수정한다
 - 목록과 단건 조회가 일치하는지 확인한다
 
+## 리소스 상태 확인 (CLI)
+
+### 전체 파라미터 목록 확인
+
+```bash
+bash ops/aws-local.sh ssm get-parameters-by-path --path /app/flags --recursive
+```
+
+예시 출력:
+
+```json
+{
+  "Parameters": [
+    { "Name": "/app/flags/new-ui", "Value": "false" },
+    { "Name": "/app/flags/checkout-v2", "Value": "true" }
+  ]
+}
+```
+
+이렇게 해석합니다:
+
+- `/app/flags/` 아래 파라미터가 보이면 시드가 정상입니다.
+- 새로 만든 플래그도 같은 경로 아래에 추가됩니다.
+
 ### 4. 최종 검증
 
 ```bash
