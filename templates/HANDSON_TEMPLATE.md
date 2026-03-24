@@ -30,7 +30,7 @@ flowchart LR
 - `Docker 20.10+`
 - `docker compose v2+`
 - `Node.js 22`
-- `pnpm`
+- `npm`
 - `aws` CLI
 - AWS endpoint: `http://localhost:4566`
 - AWS profile: `floci`
@@ -38,10 +38,10 @@ flowchart LR
 
 ## 실행 순서
 
-1. `pnpm bootstrap`
-2. `pnpm aws:profile`
+1. `npm run bootstrap`
+2. `npm run aws:profile`
 3. `apps/{slug}/scripts/setup.sh`
-4. `pnpm verify:floci`
+4. `npm run verify:floci`
 5. 예제 앱 실행
 
 ## endpoint 규칙

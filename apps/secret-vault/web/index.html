@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Secret Vault Hands-on</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --panel: #fff;
+        --line: #dce4f0;
+        --text: #16202a;
+        --muted: #5f6f7f;
+        --accent: #155eef;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: linear-gradient(180deg, #eef4fb 0%, #fafcff 100%);
+        color: var(--text);
+      }
+      .page { max-width: 1180px; margin: 0 auto; padding: 24px; }
+      .hero h1 { margin: 0 0 8px; font-size: 34px; }
+      .hero p { margin: 0 0 24px; color: var(--muted); }
+      .grid {
+        display: grid;
+        grid-template-columns: 360px 1fr 360px;
+        gap: 20px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 10px 24px rgba(20, 31, 54, 0.05);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      input, textarea, button { font: inherit; }
+      input, textarea {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      textarea { min-height: 96px; resize: vertical; }
+      button {
+        border: none;
+        border-radius: 10px;
+        padding: 12px 14px;
+        background: var(--accent);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .item {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+        margin-bottom: 10px;
+        background: #fbfdff;
+      }
+      .item h3 { margin: 0 0 6px; font-size: 16px; }
+      .item p { margin: 0; color: var(--muted); font-size: 14px; }
+      pre {
+        margin: 0;
+        padding: 12px;
+        border-radius: 12px;
+        background: #f4f7fb;
+        overflow: auto;
+        font-size: 13px;
+      }
+      .status { min-height: 24px; color: var(--muted); font-size: 14px; }
+      @media (max-width: 1100px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <h1>Secret Vault Hands-on</h1>
+        <p>Secrets Manager와 KMS를 이용해 비밀을 저장하고, 목록과 상세 조회를 분리하는 예제입니다.</p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>비밀 생성</h2>
+          <form id="secret-form">
+            <label class="field">
+              <span>이름</span>
+              <input id="name" required />
+            </label>
+            <label class="field">
+              <span>설명</span>
+              <input id="description" />
+            </label>
+            <label class="field">
+              <span>값</span>
+              <textarea id="value" required></textarea>
+            </label>
+            <button type="submit">비밀 저장</button>
+            <div id="status" class="status"></div>
+          </form>
+        </article>
+
+        <article class="card">
+          <h2>비밀 목록</h2>
+          <div id="items"></div>
+        </article>
+
+        <article class="card">
+          <h2>상세 조회</h2>
+          <pre id="detail">{}</pre>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("secret-form");
+      const statusNode = document.getElementById("status");
+      const itemsNode = document.getElementById("items");
+      const detailNode = document.getElementById("detail");
+
+      async function request(url, options = {}) {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "request_failed");
+        }
+        return data;
+      }
+
+      async function refresh() {
+        const data = await request("/api/secrets");
+        itemsNode.innerHTML = "";
+        if (!data.items.length) {
+          itemsNode.innerHTML = '<div class="status">비밀이 아직 없습니다.</div>';
+          return;
+        }
+
+        data.items.forEach((item) => {
+          const node = document.createElement("button");
+          node.type = "button";
+          node.className = "item";
+          node.innerHTML = `
+            <h3>${item.name}</h3>
+            <p>${item.description || "설명 없음"}</p>
+            <p>value: ${item.masked}</p>
+          `;
+          node.addEventListener("click", async () => {
+            const detail = await request(`/api/secrets/${encodeURIComponent(item.name)}`);
+            detailNode.textContent = JSON.stringify(detail, null, 2);
+          });
+          itemsNode.append(node);
+        });
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const payload = {
+          name: document.getElementById("name").value.trim(),
+          description: document.getElementById("description").value.trim(),
+          value: document.getElementById("value").value.trim()
+        };
+
+        statusNode.textContent = "비밀 저장 중입니다...";
+
+        try {
+          await request("/api/secrets", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          form.reset();
+          statusNode.textContent = "비밀이 저장되었습니다.";
+          await refresh();
+        } catch (error) {
+          statusNode.textContent = error.message || "비밀 저장 실패";
+        }
+      });
+
+      refresh().catch(() => {});
+    </script>
+  </body>
+</html>

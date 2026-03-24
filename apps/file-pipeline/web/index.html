@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>File Pipeline Hands-on</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --panel: #fff;
+        --line: #dce3ef;
+        --text: #16202a;
+        --muted: #5f6f7f;
+        --accent: #155eef;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: linear-gradient(180deg, #eef4fb 0%, #fafcff 100%);
+        color: var(--text);
+      }
+      .page { max-width: 1100px; margin: 0 auto; padding: 24px; }
+      .hero h1 { margin: 0 0 8px; font-size: 34px; }
+      .hero p { margin: 0 0 24px; color: var(--muted); }
+      .grid {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 20px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 10px 24px rgba(20, 31, 54, 0.05);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      input, textarea, button { font: inherit; }
+      input, textarea {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      textarea {
+        min-height: 90px;
+        resize: vertical;
+      }
+      button {
+        border: none;
+        border-radius: 10px;
+        padding: 12px 14px;
+        background: var(--accent);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .item {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+        margin-bottom: 10px;
+        background: #fbfdff;
+      }
+      .item h3 { margin: 0 0 6px; font-size: 16px; }
+      .item p { margin: 0 0 6px; color: var(--muted); font-size: 14px; }
+      .status { min-height: 24px; color: var(--muted); font-size: 14px; }
+      @media (max-width: 900px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <h1>File Pipeline Hands-on</h1>
+        <p>파일을 업로드하고 큐 기반 비동기 처리로 상태를 갱신하는 예제입니다.</p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>파일 업로드</h2>
+          <form id="upload-form">
+            <label class="field">
+              <span>설명</span>
+              <textarea id="description"></textarea>
+            </label>
+            <label class="field">
+              <span>텍스트 파일</span>
+              <input id="file" type="file" accept=".txt,text/plain" required />
+            </label>
+            <button type="submit">업로드</button>
+            <div id="status" class="status"></div>
+          </form>
+        </article>
+
+        <article class="card">
+          <h2>처리 상태</h2>
+          <div id="items"></div>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("upload-form");
+      const statusNode = document.getElementById("status");
+      const itemsNode = document.getElementById("items");
+
+      async function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const [, base64] = String(reader.result).split(",");
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function request(url, options = {}) {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "request_failed");
+        }
+        return data;
+      }
+
+      async function refresh() {
+        const data = await request("/api/files");
+        itemsNode.innerHTML = "";
+        if (!data.items.length) {
+          itemsNode.innerHTML = '<div class="status">업로드된 파일이 아직 없습니다.</div>';
+          return;
+        }
+        data.items.forEach((item) => {
+          const node = document.createElement("div");
+          node.className = "item";
+          node.innerHTML = `
+            <h3>${item.filename}</h3>
+            <p>상태: ${item.status}</p>
+            <p>설명: ${item.description || "없음"}</p>
+            <p>처리 바이트: ${item.processedBytes}</p>
+          `;
+          itemsNode.append(node);
+        });
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const file = document.getElementById("file").files[0];
+        if (!file) return;
+        const description = document.getElementById("description").value.trim();
+        statusNode.textContent = "업로드 중입니다...";
+
+        try {
+          await request("/api/files", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              filename: file.name,
+              contentType: file.type || "text/plain",
+              description,
+              dataBase64: await fileToBase64(file)
+            })
+          });
+          form.reset();
+          statusNode.textContent = "업로드가 완료되었습니다.";
+          await refresh();
+        } catch (error) {
+          statusNode.textContent = error.message || "업로드 실패";
+        }
+      });
+
+      refresh().catch(() => {});
+      setInterval(() => refresh().catch(() => {}), 2000);
+    </script>
+  </body>
+</html>

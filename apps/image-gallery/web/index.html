@@ -273,7 +273,12 @@
           <span>${item.description || "설명 없음"}</span>
           <span>파일명: <code>${item.filename}</code></span>
           <span>업로드 시각: <code>${item.uploadedAt}</code></span>
-          <span>S3 Key: <code>${item.s3Key}</code></span>
+          <span>원본 크기: <code>${item.originalBytes}</code> bytes</span>
+          <span>표시용 크기: <code>${item.displayBytes}</code> bytes</span>
+          <span>thumbnail 크기: <code>${item.thumbnailBytes}</code> bytes</span>
+          <span>자동 리사이즈: <code>${item.wasResized}</code></span>
+          <span>표시용 S3 Key: <code>${item.displayS3Key}</code></span>
+          <span>원본 보기: <a href="${item.originalImageUrl}" target="_blank" rel="noreferrer">open</a></span>
         `;
 
         detailNode.append(image, meta);
@@ -296,7 +301,7 @@
           card.type = "button";
           card.className = "gallery-item";
           card.innerHTML = `
-            <img src="${item.imageUrl}" alt="${item.title}" />
+            <img src="${item.thumbnailUrl || item.imageUrl}" alt="${item.title}" />
             <div class="body">
               <h3>${item.title}</h3>
               <p>${item.description || "설명 없음"}</p>

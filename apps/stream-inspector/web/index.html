@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stream Inspector Hands-on</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --panel: #fff;
+        --line: #dce4f0;
+        --text: #16202a;
+        --muted: #5f6f7f;
+        --accent: #155eef;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: linear-gradient(180deg, #eef4fb 0%, #fafcff 100%);
+        color: var(--text);
+      }
+      .page { max-width: 1180px; margin: 0 auto; padding: 24px; }
+      .hero h1 { margin: 0 0 8px; font-size: 34px; }
+      .hero p { margin: 0 0 24px; color: var(--muted); }
+      .grid {
+        display: grid;
+        grid-template-columns: 360px 320px 1fr;
+        gap: 20px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 10px 24px rgba(20, 31, 54, 0.05);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      input, textarea, button { font: inherit; }
+      input, textarea {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      textarea { min-height: 100px; resize: vertical; }
+      button {
+        border: none;
+        border-radius: 10px;
+        padding: 12px 14px;
+        background: var(--accent);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      pre {
+        margin: 0;
+        padding: 12px;
+        border-radius: 12px;
+        background: #f4f7fb;
+        overflow: auto;
+        font-size: 13px;
+      }
+      .status { min-height: 24px; color: var(--muted); font-size: 14px; }
+      @media (max-width: 1100px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <h1>Stream Inspector Hands-on</h1>
+        <p>Kinesis stream에 이벤트를 넣고 최근 레코드를 다시 읽어 오는 예제입니다.</p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>이벤트 발행</h2>
+          <form id="record-form">
+            <label class="field">
+              <span>partition key</span>
+              <input id="partitionKey" required />
+            </label>
+            <label class="field">
+              <span>payload</span>
+              <textarea id="payload" required></textarea>
+            </label>
+            <button type="submit">발행</button>
+            <div id="status" class="status"></div>
+          </form>
+        </article>
+
+        <article class="card">
+          <h2>Stream 정보</h2>
+          <pre id="stream">{}</pre>
+        </article>
+
+        <article class="card">
+          <h2>최근 레코드</h2>
+          <pre id="records">[]</pre>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("record-form");
+      const statusNode = document.getElementById("status");
+      const streamNode = document.getElementById("stream");
+      const recordsNode = document.getElementById("records");
+
+      async function request(url, options = {}) {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "request_failed");
+        }
+        return data;
+      }
+
+      async function refresh() {
+        const [stream, records] = await Promise.all([
+          request("/api/stream"),
+          request("/api/records")
+        ]);
+        streamNode.textContent = JSON.stringify(stream, null, 2);
+        recordsNode.textContent = JSON.stringify(records.items, null, 2);
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const payload = {
+          partitionKey: document.getElementById("partitionKey").value.trim(),
+          data: document.getElementById("payload").value.trim()
+        };
+
+        statusNode.textContent = "발행 중입니다...";
+        try {
+          await request("/api/records", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          form.reset();
+          statusNode.textContent = "발행되었습니다.";
+          await refresh();
+        } catch (error) {
+          statusNode.textContent = error.message || "발행 실패";
+        }
+      });
+
+      refresh().catch(() => {});
+    </script>
+  </body>
+</html>

@@ -30,11 +30,18 @@
 
 ## 지금 바로 실행 가능한 핸즈온
 
-현재 이 저장소에는 아래 3개의 runnable hands-on이 있습니다.
+현재 이 저장소에는 아래 10개의 runnable hands-on이 있습니다.
 
 - [이미지 업로드 갤러리](./apps/image-gallery/README.md)
 - [주문 접수와 비동기 처리](./apps/order-processing/README.md)
 - [회원가입/로그인 포털](./apps/auth-portal/README.md)
+- [할 일 관리 API + 상태 로그](./apps/todo-logs/README.md)
+- [알림 센터](./apps/alert-center/README.md)
+- [파일 처리 파이프라인](./apps/file-pipeline/README.md)
+- [비밀 보관함](./apps/secret-vault/README.md)
+- [기능 플래그 대시보드](./apps/feature-flags/README.md)
+- [스트림 인스펙터](./apps/stream-inspector/README.md)
+- [CloudFormation Playground](./apps/cloudformation-playground/README.md)
 
 핵심 공통 규칙:
 
@@ -47,16 +54,53 @@
 
 ```bash
 bash ops/bootstrap-floci.sh
-pnpm priority3:setup
+npm run priority3:setup
 ```
 
 전체 검증:
 
 ```bash
-pnpm priority3:smoke
+npm run priority3:smoke
 ```
 
 핸즈온 요약 인덱스는 [apps/README.md](./apps/README.md)에서 볼 수 있습니다.
+
+10개 전체를 한 번에 검증하려면:
+
+```bash
+npm run all10:smoke
+```
+
+## Known Limitations
+
+현재 이 저장소는 `floci`가 실제로 잘 붙는 서비스 중심으로 hands-on을 구성했습니다. 아래는 아직 보류된 항목입니다.
+
+- `RDS + ElastiCache`
+  - 공식 문서상 지원 서비스이지만, 현재 환경에선 runtime/proxy 단계가 안정적으로 붙지 않았습니다.
+- `EventBridge + Lambda`
+  - 현재 환경에서 Lambda runtime 컨테이너 기동이 `Permission denied`로 막혔습니다.
+- `auth-portal`
+  - 현재는 `Cognito-first bootstrap`입니다.
+  - `API Gateway v2 + Lambda`를 실제 리소스로 연결하는 예제는 후속 단계입니다.
+
+즉, 이 저장소는 “문서상 지원 서비스 전체를 완벽히 재현”하기보다, “현재 환경에서 실제로 반복 학습 가능한 runnable hands-on”에 우선순위를 두고 있습니다.
+
+## Release Notes
+
+이번 버전에서 정리된 내용:
+
+- runnable hands-on 10개 구성
+- 공통 endpoint/profile 규칙 통일
+- `.aws-local` 기반 격리된 AWS CLI 설정
+- 초보자용 설치/요구사항 문서 추가
+- 각 앱 README에
+  - AWS 참고 링크
+  - Mermaid 아키텍처
+  - Excalidraw 워크플로
+  - Trade-off 표
+  - 단계별 hands-on 가이드
+  - 중간 테스트와 최종 smoke 절차
+- 전체 smoke 스크립트 기준 10개 예제 통과
 
 ## floci와 LocalStack을 어떻게 봐야 하나
 
@@ -516,6 +560,13 @@ flowchart LR
 - [이미지 업로드 갤러리](./apps/image-gallery/README.md)
 - [주문 접수와 비동기 처리](./apps/order-processing/README.md)
 - [회원가입/로그인 포털](./apps/auth-portal/README.md)
+- [할 일 관리 API + 상태 로그](./apps/todo-logs/README.md)
+- [알림 센터](./apps/alert-center/README.md)
+- [파일 처리 파이프라인](./apps/file-pipeline/README.md)
+- [비밀 보관함](./apps/secret-vault/README.md)
+- [기능 플래그 대시보드](./apps/feature-flags/README.md)
+- [스트림 인스펙터](./apps/stream-inspector/README.md)
+- [CloudFormation Playground](./apps/cloudformation-playground/README.md)
 
 ### 이후 확장 후보
 

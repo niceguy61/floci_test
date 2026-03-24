@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Alert Center Hands-on</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --panel: #fff;
+        --line: #dce3ef;
+        --text: #16202a;
+        --muted: #607180;
+        --accent: #155eef;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: linear-gradient(180deg, #eef4fb 0%, #fafcff 100%);
+        color: var(--text);
+      }
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .hero h1 { margin: 0 0 8px; font-size: 34px; }
+      .hero p { margin: 0 0 24px; color: var(--muted); }
+      .grid {
+        display: grid;
+        grid-template-columns: 360px 1fr 1fr;
+        gap: 20px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 10px 24px rgba(20, 31, 54, 0.05);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      input, textarea, button { font: inherit; }
+      input, textarea {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+      button {
+        border: none;
+        border-radius: 10px;
+        padding: 12px 14px;
+        background: var(--accent);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      pre {
+        margin: 0;
+        padding: 12px;
+        border-radius: 12px;
+        background: #f4f7fb;
+        overflow: auto;
+        font-size: 13px;
+      }
+      .status { min-height: 24px; color: var(--muted); font-size: 14px; }
+      @media (max-width: 1000px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <h1>Alert Center Hands-on</h1>
+        <p>SNS topic에 발행한 메시지가 Subscriber A / B 큐로 fan-out 되는 구조를 실습합니다.</p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>알림 발송</h2>
+          <form id="publish-form">
+            <label class="field">
+              <span>제목</span>
+              <input id="title" required />
+            </label>
+            <label class="field">
+              <span>본문</span>
+              <textarea id="body" required></textarea>
+            </label>
+            <button type="submit">발행</button>
+            <div id="status" class="status"></div>
+          </form>
+          <h3>Topic 정보</h3>
+          <pre id="topic">{}</pre>
+        </article>
+
+        <article class="card">
+          <h2>Subscriber A</h2>
+          <pre id="sub-a">[]</pre>
+        </article>
+
+        <article class="card">
+          <h2>Subscriber B</h2>
+          <pre id="sub-b">[]</pre>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("publish-form");
+      const statusNode = document.getElementById("status");
+      const topicNode = document.getElementById("topic");
+      const subANode = document.getElementById("sub-a");
+      const subBNode = document.getElementById("sub-b");
+
+      async function request(url, options = {}) {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "request_failed");
+        }
+        return data;
+      }
+
+      async function refresh() {
+        const [topic, subscribers] = await Promise.all([
+          request("/api/topic"),
+          request("/api/subscribers")
+        ]);
+        topicNode.textContent = JSON.stringify(topic, null, 2);
+        subANode.textContent = JSON.stringify(subscribers.subscriberA, null, 2);
+        subBNode.textContent = JSON.stringify(subscribers.subscriberB, null, 2);
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const title = document.getElementById("title").value.trim();
+        const body = document.getElementById("body").value.trim();
+        statusNode.textContent = "발행 중입니다...";
+
+        try {
+          await request("/api/publish", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, body })
+          });
+          form.reset();
+          statusNode.textContent = "발행되었습니다.";
+          await refresh();
+        } catch (error) {
+          statusNode.textContent = error.message || "발행 실패";
+        }
+      });
+
+      refresh().catch(() => {});
+      setInterval(() => refresh().catch(() => {}), 2000);
+    </script>
+  </body>
+</html>

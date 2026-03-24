@@ -2,7 +2,7 @@
   "name": "floci-hands-ons",
   "private": true,
   "version": "0.1.0",
-  "packageManager": "pnpm@10.6.0",
+  "packageManager": "npm@10.9.4",
   "engines": {
     "node": ">=22"
   },
@@ -12,6 +12,8 @@
     "verify:floci": "bash ops/verify-floci.sh",
     "priority3:setup": "bash apps/image-gallery/scripts/setup.sh && bash apps/order-processing/scripts/setup.sh && bash apps/auth-portal/scripts/setup.sh",
     "priority3:smoke": "bash apps/image-gallery/checks/smoke.sh && bash apps/order-processing/checks/smoke.sh && bash apps/auth-portal/checks/smoke.sh",
+    "all10:setup": "bash apps/image-gallery/scripts/setup.sh && bash apps/order-processing/scripts/setup.sh && bash apps/auth-portal/scripts/setup.sh && bash apps/todo-logs/scripts/setup.sh && bash apps/alert-center/scripts/setup.sh && bash apps/file-pipeline/scripts/setup.sh && bash apps/secret-vault/scripts/setup.sh && bash apps/feature-flags/scripts/setup.sh && bash apps/stream-inspector/scripts/setup.sh && bash apps/cloudformation-playground/scripts/setup.sh",
+    "all10:smoke": "bash apps/image-gallery/checks/smoke.sh && bash apps/order-processing/checks/smoke.sh && bash apps/auth-portal/checks/smoke.sh && bash apps/todo-logs/checks/smoke.sh && bash apps/alert-center/checks/smoke.sh && bash apps/file-pipeline/checks/smoke.sh && bash apps/secret-vault/checks/smoke.sh && bash apps/feature-flags/checks/smoke.sh && bash apps/stream-inspector/checks/smoke.sh && bash apps/cloudformation-playground/checks/smoke.sh",
     "image-gallery:setup": "bash apps/image-gallery/scripts/setup.sh",
     "image-gallery:dev": "node apps/image-gallery/api/server.mjs",
     "image-gallery:smoke": "bash apps/image-gallery/checks/smoke.sh",
@@ -21,6 +23,31 @@
     "order-processing:smoke": "bash apps/order-processing/checks/smoke.sh",
     "auth-portal:setup": "bash apps/auth-portal/scripts/setup.sh",
     "auth-portal:dev": "node apps/auth-portal/api/server.mjs",
-    "auth-portal:smoke": "bash apps/auth-portal/checks/smoke.sh"
+    "auth-portal:smoke": "bash apps/auth-portal/checks/smoke.sh",
+    "todo-logs:setup": "bash apps/todo-logs/scripts/setup.sh",
+    "todo-logs:dev": "node apps/todo-logs/api/server.mjs",
+    "todo-logs:smoke": "bash apps/todo-logs/checks/smoke.sh",
+    "alert-center:setup": "bash apps/alert-center/scripts/setup.sh",
+    "alert-center:dev": "node apps/alert-center/api/server.mjs",
+    "alert-center:smoke": "bash apps/alert-center/checks/smoke.sh",
+    "file-pipeline:setup": "bash apps/file-pipeline/scripts/setup.sh",
+    "file-pipeline:dev": "node apps/file-pipeline/api/server.mjs",
+    "file-pipeline:worker": "node apps/file-pipeline/worker/worker.mjs",
+    "file-pipeline:smoke": "bash apps/file-pipeline/checks/smoke.sh",
+    "secret-vault:setup": "bash apps/secret-vault/scripts/setup.sh",
+    "secret-vault:dev": "node apps/secret-vault/api/server.mjs",
+    "secret-vault:smoke": "bash apps/secret-vault/checks/smoke.sh",
+    "feature-flags:setup": "bash apps/feature-flags/scripts/setup.sh",
+    "feature-flags:dev": "node apps/feature-flags/api/server.mjs",
+    "feature-flags:smoke": "bash apps/feature-flags/checks/smoke.sh",
+    "stream-inspector:setup": "bash apps/stream-inspector/scripts/setup.sh",
+    "stream-inspector:dev": "node apps/stream-inspector/api/server.mjs",
+    "stream-inspector:smoke": "bash apps/stream-inspector/checks/smoke.sh",
+    "cloudformation-playground:setup": "bash apps/cloudformation-playground/scripts/setup.sh",
+    "cloudformation-playground:dev": "node apps/cloudformation-playground/api/server.mjs",
+    "cloudformation-playground:smoke": "bash apps/cloudformation-playground/checks/smoke.sh"
+  },
+  "dependencies": {
+    "sharp": "^0.34.5"
   }
 }

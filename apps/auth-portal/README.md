@@ -2,62 +2,75 @@
 
 상태: `runnable bootstrap (Cognito-first)`
 
-이 핸즈온은 `Cognito + API Gateway v2 + Lambda` 조합으로 인증된 웹 앱 흐름을 학습하는 예제다.
+## 이 아키텍처를 AWS에서 왜 많이 쓰나
 
-## 목표
+실제 AWS에서는 `Cognito User Pool`로 사용자 인증을 맡기고, 보호된 API는 `API Gateway` 또는 애플리케이션 서버에서 토큰을 검증하는 구조가 흔합니다.
 
-- 회원가입, 로그인, 보호된 API 호출의 기본 감각 익히기
-- `floci` endpoint `http://localhost:4566` 기준으로 인증 관련 리소스 접근 규칙 익히기
+AWS 참고 링크:
+- Cognito User Pools: https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools.html
+- App Clients: https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-client-apps.html
 
-## 무엇을 만들었나
+## Mermaid 아키텍처
 
-- 회원가입 / 로그인 / 프로필 확인 웹 UI
-- `aws` CLI를 내부에서 호출하는 zero-dependency Node API 서버
-- Cognito user pool / app client 생성 스크립트
-- 회원가입 -> 관리자 확인 -> 로그인 -> 보호된 프로필 조회까지 검증하는 smoke check
+```mermaid
+flowchart LR
+    User[User / Browser] --> Web[Web UI]
+    Web --> API[Auth API]
+    API --> Cognito[Cognito User Pool / App Client]
+```
 
-## 현재 구현 범위
+## Workflow (Excalidraw)
 
-이번 bootstrap은 `Cognito` 인증 흐름을 실제로 끝까지 검증하는 데 초점을 둔다.
+- [workflow.excalidraw](./workflow.excalidraw)
 
-- 실제로 동작하는 것: `Cognito`
-- 다음 단계로 남겨둔 것: `API Gateway v2`, `Lambda`를 실제 리소스로 연결하는 확장
-- 현재 확인된 confirmation code 흐름: `confirm-sign-up` with `123456`
+## Trade-off
 
-즉, 학습 포인트는 유지하되, 가장 불확실한 계층은 후속 단계로 분리했다.
+| 좋아지는 점 | 나빠지는 점 | 언제 적합한가 |
+|---|---|---|
+| 인증 책임을 분리할 수 있음 | 개념이 많아 초보자에겐 어려울 수 있음 | 로그인/회원가입이 필요한 서비스 |
+| 토큰 기반 보호 API를 쉽게 실험 가능 | 현재 hands-on은 Cognito-first라 API Gateway/Lambda는 후속 | 사용자 관리가 필요한 웹 서비스 |
+| 실제 AWS 흐름과 유사한 감각을 줌 | confirmation/토큰 흐름 이해가 필요 | 인증이 핵심인 앱 |
 
-## 로컬 실행 순서
+## 핸즈온 가이드
+
+공통 준비는 [apps/README.md](../README.md)를 먼저 읽습니다.
+
+### 1. 리소스 준비
 
 ```bash
 bash ops/bootstrap-floci.sh
 bash apps/auth-portal/scripts/setup.sh
+```
+
+### 2. 서버 실행
+
+```bash
 node apps/auth-portal/api/server.mjs
 ```
 
-서버가 뜨면 브라우저에서 `http://127.0.0.1:3003`으로 접속한다.
+기본 주소: `http://127.0.0.1:3003`
 
-## 검증
+### 3. 중간 확인
 
-```bash
-bash apps/auth-portal/checks/smoke.sh
-```
-
-## 핵심 서비스
-
-- `Cognito`: 사용자 인증
-- `API Gateway v2`: 외부 API 진입점
-- `Lambda`: 보호된 API 처리
-
-## 주의
-
-`Lambda`가 포함되므로 루트 `ops/docker-compose.floci.yml`의 Docker socket 마운트와 포트 설정을 그대로 유지해야 한다.
-
-## endpoint 규칙
-
-모든 CLI 검증은 아래 형식을 따른다.
+CLI:
 
 ```bash
 aws --profile floci --endpoint-url http://localhost:4566 cognito-idp list-user-pools --max-results 10
 ```
 
-이 핸즈온은 사용자 홈의 `~/.aws`를 수정하지 않고, 저장소 내부 `.aws-local/` 설정 파일을 사용한다.
+Web UI:
+
+- 회원가입
+- 확인
+- 로그인
+- 프로필 조회
+
+### 4. 최종 검증
+
+```bash
+bash apps/auth-portal/checks/smoke.sh
+```
+
+주의:
+- 현재 hands-on은 `confirm-sign-up(code=123456)` 경로를 사용합니다.
+- `API Gateway v2 + Lambda` 연동은 후속 확장 단계입니다.

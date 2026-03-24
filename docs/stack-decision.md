@@ -6,7 +6,7 @@
 
 - Runtime: `Node.js 22`
 - Language: `TypeScript`
-- Workspace: `pnpm workspaces`
+- Package manager baseline: `npm`
 - Frontend: `React + Vite`
 - AWS 연결 방식: `AWS SDK for JavaScript v3`를 염두에 둔 TypeScript 구조
 - 로컬 AWS endpoint: `http://localhost:4566`

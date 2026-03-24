@@ -7,6 +7,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
+import sharp from "sharp";
 
 const execFileAsync = promisify(execFile);
 
@@ -24,6 +25,9 @@ const accessKeyId = process.env.AWS_ACCESS_KEY_ID ?? "test";
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY ?? "test";
 const bucket = process.env.IMAGE_GALLERY_BUCKET ?? "image-gallery-bucket";
 const table = process.env.IMAGE_GALLERY_TABLE ?? "image_metadata";
+const maxOriginalBytes = Number(process.env.IMAGE_GALLERY_MAX_BYTES ?? 1024 * 1024);
+const resizedMaxWidth = Number(process.env.IMAGE_GALLERY_RESIZED_MAX_WIDTH ?? 1280);
+const thumbnailWidth = Number(process.env.IMAGE_GALLERY_THUMBNAIL_WIDTH ?? 320);
 
 function json(res, statusCode, body) {
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
@@ -84,9 +88,22 @@ function decodeItem(item) {
     description: item.description?.S ?? "",
     filename: item.filename?.S ?? "",
     contentType: item.contentType?.S ?? "application/octet-stream",
-    s3Key: item.s3Key?.S ?? "",
+    originalContentType: item.originalContentType?.S ?? item.contentType?.S ?? "application/octet-stream",
+    originalS3Key: item.originalS3Key?.S ?? item.s3Key?.S ?? "",
+    displayS3Key: item.displayS3Key?.S ?? item.s3Key?.S ?? "",
+    thumbnailS3Key: item.thumbnailS3Key?.S ?? "",
     uploadedAt: item.uploadedAt?.S ?? "",
-    imageUrl: `/api/images/${item.id?.S ?? ""}/file`
+    originalBytes: Number(item.originalBytes?.N ?? "0"),
+    displayBytes: Number(item.displayBytes?.N ?? "0"),
+    thumbnailBytes: Number(item.thumbnailBytes?.N ?? "0"),
+    wasResized: item.wasResized?.BOOL ?? false,
+    imageUrl: `/api/images/${item.id?.S ?? ""}/file`,
+    thumbnailUrl: `/api/images/${item.id?.S ?? ""}/thumbnail`,
+    originalImageUrl: `/api/images/${item.id?.S ?? ""}/original`,
+    s3ObjectUrl: `${endpoint}/${bucket}/${item.displayS3Key?.S ?? item.s3Key?.S ?? ""}`,
+    s3ThumbnailUrl: item.thumbnailS3Key?.S
+      ? `${endpoint}/${bucket}/${item.thumbnailS3Key.S}`
+      : ""
   };
 }
 
@@ -125,7 +142,7 @@ async function getImage(id) {
 async function uploadImage(payload) {
   const id = randomUUID();
   const safeName = String(payload.filename ?? "upload.bin").replace(/[^a-zA-Z0-9._-]/g, "-");
-  const contentType = String(payload.contentType ?? "application/octet-stream");
+  const originalContentType = String(payload.contentType ?? "application/octet-stream");
   const title = String(payload.title ?? "").trim();
   const description = String(payload.description ?? "").trim();
   const dataBase64 = String(payload.dataBase64 ?? "");
@@ -135,20 +152,73 @@ async function uploadImage(payload) {
   }
 
   const uploadedAt = new Date().toISOString();
-  const s3Key = `${id}-${safeName}`;
+  const originalS3Key = `${id}-original-${safeName}`;
+  const displayS3Key = `${id}-display.webp`;
+  const thumbnailS3Key = `${id}-thumbnail.webp`;
   const tmpDir = await mkdtemp(path.join(os.tmpdir(), "image-gallery-"));
   const filePath = path.join(tmpDir, safeName);
+  const displayPath = path.join(tmpDir, `${id}-display.webp`);
+  const thumbnailPath = path.join(tmpDir, `${id}-thumbnail.webp`);
+  const originalBuffer = Buffer.from(dataBase64, "base64");
+  const originalBytes = originalBuffer.length;
+  let displayBytes = 0;
+  let thumbnailBytes = 0;
 
   try {
-    await writeFile(filePath, Buffer.from(dataBase64, "base64"));
+    await writeFile(filePath, originalBuffer);
+
+    const displaySource =
+      originalBytes > maxOriginalBytes
+        ? sharp(originalBuffer).rotate().resize({
+            width: resizedMaxWidth,
+            height: resizedMaxWidth,
+            fit: "inside",
+            withoutEnlargement: true
+          })
+        : sharp(originalBuffer).rotate();
+
+    const displayResult = await displaySource
+      .webp({ quality: 82 })
+      .toFile(displayPath);
+    displayBytes = displayResult.size;
+
+    const thumbnailResult = await sharp(originalBuffer)
+      .rotate()
+      .resize({
+        width: thumbnailWidth,
+        height: thumbnailWidth,
+        fit: "inside",
+        withoutEnlargement: true
+      })
+      .webp({ quality: 78 })
+      .toFile(thumbnailPath);
+    thumbnailBytes = thumbnailResult.size;
 
     await runAws([
       "s3",
       "cp",
       filePath,
-      `s3://${bucket}/${s3Key}`,
+      `s3://${bucket}/${originalS3Key}`,
       "--content-type",
-      contentType
+      originalContentType
+    ]);
+
+    await runAws([
+      "s3",
+      "cp",
+      displayPath,
+      `s3://${bucket}/${displayS3Key}`,
+      "--content-type",
+      "image/webp"
+    ]);
+
+    await runAws([
+      "s3",
+      "cp",
+      thumbnailPath,
+      `s3://${bucket}/${thumbnailS3Key}`,
+      "--content-type",
+      "image/webp"
     ]);
 
     await runAws([
@@ -162,8 +232,15 @@ async function uploadImage(payload) {
         title: { S: title },
         description: { S: description },
         filename: { S: safeName },
-        contentType: { S: contentType },
-        s3Key: { S: s3Key },
+        contentType: { S: "image/webp" },
+        originalContentType: { S: originalContentType },
+        originalS3Key: { S: originalS3Key },
+        displayS3Key: { S: displayS3Key },
+        thumbnailS3Key: { S: thumbnailS3Key },
+        originalBytes: { N: String(originalBytes) },
+        displayBytes: { N: String(displayBytes) },
+        thumbnailBytes: { N: String(thumbnailBytes) },
+        wasResized: { BOOL: originalBytes > maxOriginalBytes },
         uploadedAt: { S: uploadedAt }
       })
     ]);
@@ -176,10 +253,21 @@ async function uploadImage(payload) {
     title,
     description,
     filename: safeName,
-    contentType,
-    s3Key,
+    contentType: "image/webp",
+    originalContentType,
+    originalS3Key,
+    displayS3Key,
+    thumbnailS3Key,
     uploadedAt,
-    imageUrl: `/api/images/${id}/file`
+    originalBytes,
+    displayBytes,
+    thumbnailBytes,
+    wasResized: originalBytes > maxOriginalBytes,
+    imageUrl: `/api/images/${id}/file`,
+    thumbnailUrl: `/api/images/${id}/thumbnail`,
+    originalImageUrl: `/api/images/${id}/original`,
+    s3ObjectUrl: `${endpoint}/${bucket}/${displayS3Key}`,
+    s3ThumbnailUrl: `${endpoint}/${bucket}/${thumbnailS3Key}`
   };
 }
 
@@ -189,9 +277,9 @@ async function sendStaticIndex(res) {
   res.end(html);
 }
 
-async function sendImageFile(res, image) {
+async function sendS3Object(res, key, contentType, filename) {
   const tmpDir = await mkdtemp(path.join(os.tmpdir(), "image-gallery-download-"));
-  const outputPath = path.join(tmpDir, image.filename || `${image.id}.bin`);
+  const outputPath = path.join(tmpDir, filename);
 
   try {
     await runAws([
@@ -200,14 +288,14 @@ async function sendImageFile(res, image) {
       "--bucket",
       bucket,
       "--key",
-      image.s3Key,
+      key,
       outputPath
     ]);
 
     await stat(outputPath);
 
     res.writeHead(200, {
-      "Content-Type": image.contentType,
+      "Content-Type": contentType,
       "Cache-Control": "no-store"
     });
 
@@ -281,7 +369,44 @@ const server = http.createServer(async (req, res) => {
         notFound(res);
         return;
       }
-      await sendImageFile(res, image);
+      await sendS3Object(
+        res,
+        image.displayS3Key,
+        image.contentType,
+        `${image.id}-display.webp`
+      );
+      return;
+    }
+
+    const originalMatch = requestUrl.pathname.match(/^\/api\/images\/([^/]+)\/original$/);
+    if (req.method === "GET" && originalMatch) {
+      const image = await getImage(originalMatch[1]);
+      if (!image) {
+        notFound(res);
+        return;
+      }
+      await sendS3Object(
+        res,
+        image.originalS3Key,
+        image.originalContentType,
+        image.filename || `${image.id}-original.bin`
+      );
+      return;
+    }
+
+    const thumbnailMatch = requestUrl.pathname.match(/^\/api\/images\/([^/]+)\/thumbnail$/);
+    if (req.method === "GET" && thumbnailMatch) {
+      const image = await getImage(thumbnailMatch[1]);
+      if (!image) {
+        notFound(res);
+        return;
+      }
+      await sendS3Object(
+        res,
+        image.thumbnailS3Key,
+        "image/webp",
+        `${image.id}-thumbnail.webp`
+      );
       return;
     }
 

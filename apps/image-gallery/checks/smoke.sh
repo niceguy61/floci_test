@@ -57,16 +57,38 @@ curl -fsS "$APP_URL/api/health" >"$TMP_DIR/health.json"
 
 node -e 'const fs=require("fs"); const data=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); if(data.status!=="ok"){process.exit(1)}' "$TMP_DIR/health.json"
 
-DATA_BASE64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wn2e6kAAAAASUVORK5CYII="
-cat >"$TMP_DIR/upload.json" <<EOF
-{
-  "title": "Smoke Test Image",
-  "description": "Uploaded by smoke.sh",
-  "filename": "smoke-test.png",
-  "contentType": "image/png",
-  "dataBase64": "$DATA_BASE64"
-}
-EOF
+node - <<'NODE' "$TMP_DIR"
+const path = require("path");
+const fs = require("fs");
+const crypto = require("crypto");
+const sharp = require("sharp");
+
+const tmpDir = process.argv[2];
+const width = 1200;
+const height = 1200;
+const channels = 3;
+const raw = crypto.randomBytes(width * height * channels);
+const outPath = path.join(tmpDir, "large.png");
+
+sharp(raw, { raw: { width, height, channels } })
+  .png()
+  .toFile(outPath)
+  .then(() => {
+    const buffer = fs.readFileSync(outPath);
+    const payload = {
+      title: "Smoke Test Large Image",
+      description: "Uploaded by smoke.sh",
+      filename: "smoke-large.png",
+      contentType: "image/png",
+      dataBase64: buffer.toString("base64")
+    };
+    fs.writeFileSync(path.join(tmpDir, "upload.json"), JSON.stringify(payload, null, 2));
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+NODE
 
 curl -fsS -X POST \
   -H "Content-Type: application/json" \
@@ -78,10 +100,14 @@ IMAGE_ID="$(node -e 'const fs=require("fs"); const data=JSON.parse(fs.readFileSy
 curl -fsS "$APP_URL/api/images" >"$TMP_DIR/list.json"
 curl -fsS "$APP_URL/api/images/$IMAGE_ID" >"$TMP_DIR/detail.json"
 curl -fsS "$APP_URL/api/images/$IMAGE_ID/file" >"$TMP_DIR/file.bin"
+curl -fsS "$APP_URL/api/images/$IMAGE_ID/thumbnail" >"$TMP_DIR/thumb.bin"
+curl -fsS "$APP_URL/api/images/$IMAGE_ID/original" >"$TMP_DIR/original.bin"
 
 node -e 'const fs=require("fs"); const list=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); if(!Array.isArray(list.items)||!list.items.find((item)=>item.id===process.argv[2])){process.exit(1)}' "$TMP_DIR/list.json" "$IMAGE_ID"
-node -e 'const fs=require("fs"); const detail=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); if(detail.id!==process.argv[2]||detail.title!=="Smoke Test Image"){process.exit(1)}' "$TMP_DIR/detail.json" "$IMAGE_ID"
+node -e 'const fs=require("fs"); const detail=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); if(detail.id!==process.argv[2]||detail.title!=="Smoke Test Large Image"||detail.wasResized!==true||!detail.thumbnailUrl||!detail.originalImageUrl){process.exit(1)} if(!(detail.originalBytes>1048576)){process.exit(1)} if(!(detail.displayBytes<detail.originalBytes)){process.exit(1)}' "$TMP_DIR/detail.json" "$IMAGE_ID"
 
 test -s "$TMP_DIR/file.bin"
+test -s "$TMP_DIR/thumb.bin"
+test -s "$TMP_DIR/original.bin"
 
 echo "image-gallery smoke check passed."
