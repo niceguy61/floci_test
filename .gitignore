@@ -1,1 +1,12 @@
 .omx
+node_modules
+dist
+coverage
+.DS_Store
+*.log
+apps/**/.env.local
+apps/**/.runtime
+apps/**/playwright-report
+apps/**/test-results
+data
+.aws-local

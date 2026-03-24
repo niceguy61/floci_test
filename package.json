@@ -1,0 +1,26 @@
+{
+  "name": "floci-hands-ons",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.6.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "bootstrap": "bash ops/bootstrap-floci.sh",
+    "aws:profile": "bash ops/create-aws-profile.sh",
+    "verify:floci": "bash ops/verify-floci.sh",
+    "priority3:setup": "bash apps/image-gallery/scripts/setup.sh && bash apps/order-processing/scripts/setup.sh && bash apps/auth-portal/scripts/setup.sh",
+    "priority3:smoke": "bash apps/image-gallery/checks/smoke.sh && bash apps/order-processing/checks/smoke.sh && bash apps/auth-portal/checks/smoke.sh",
+    "image-gallery:setup": "bash apps/image-gallery/scripts/setup.sh",
+    "image-gallery:dev": "node apps/image-gallery/api/server.mjs",
+    "image-gallery:smoke": "bash apps/image-gallery/checks/smoke.sh",
+    "order-processing:setup": "bash apps/order-processing/scripts/setup.sh",
+    "order-processing:dev": "node apps/order-processing/api/server.mjs",
+    "order-processing:worker": "node apps/order-processing/worker/worker.mjs",
+    "order-processing:smoke": "bash apps/order-processing/checks/smoke.sh",
+    "auth-portal:setup": "bash apps/auth-portal/scripts/setup.sh",
+    "auth-portal:dev": "node apps/auth-portal/api/server.mjs",
+    "auth-portal:smoke": "bash apps/auth-portal/checks/smoke.sh"
+  }
+}

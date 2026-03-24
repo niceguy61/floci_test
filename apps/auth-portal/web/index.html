@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Auth Portal Hands-on</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --panel: #fff;
+        --line: #dce3ef;
+        --text: #16202a;
+        --muted: #5f6d7b;
+        --accent: #175cd3;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        color: var(--text);
+        background: linear-gradient(180deg, #eef4fb 0%, #fafcff 100%);
+      }
+      .page {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      h1 { margin: 0 0 8px; font-size: 34px; }
+      .hero p { margin: 0 0 24px; color: var(--muted); }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 10px 24px rgba(20, 31, 54, 0.05);
+      }
+      .card h2 { margin-top: 0; }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      input, button {
+        font: inherit;
+      }
+      input {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      button {
+        border: none;
+        border-radius: 10px;
+        padding: 12px 14px;
+        background: var(--accent);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .status {
+        min-height: 24px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      pre {
+        margin: 0;
+        padding: 12px;
+        border-radius: 12px;
+        background: #f4f7fb;
+        overflow: auto;
+        font-size: 13px;
+      }
+      code {
+        background: #eef3fa;
+        border-radius: 6px;
+        padding: 2px 6px;
+      }
+      @media (max-width: 1000px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <h1>Auth Portal Hands-on</h1>
+        <p>
+          이 예제는 <code>Cognito</code> 중심의 회원가입, 관리자 확인, 로그인, 보호된 프로필 조회를
+          <code>http://localhost:4566</code> 기준으로 실습합니다.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>회원가입</h2>
+          <form id="signup-form">
+            <label class="field">
+              <span>username</span>
+              <input id="signup-username" required />
+            </label>
+            <label class="field">
+              <span>email</span>
+              <input id="signup-email" type="email" />
+            </label>
+            <label class="field">
+              <span>password</span>
+              <input id="signup-password" type="password" required />
+            </label>
+            <button type="submit">회원가입</button>
+            <div id="signup-status" class="status"></div>
+          </form>
+        </article>
+
+        <article class="card">
+          <h2>로그인</h2>
+          <form id="login-form">
+            <label class="field">
+              <span>username</span>
+              <input id="login-username" required />
+            </label>
+            <label class="field">
+              <span>password</span>
+              <input id="login-password" type="password" required />
+            </label>
+            <button type="submit">로그인</button>
+            <div id="login-status" class="status"></div>
+          </form>
+        </article>
+
+        <article class="card">
+          <h2>프로필 조회</h2>
+          <button id="profile-button" type="button">내 프로필 조회</button>
+          <div class="status" id="profile-status"></div>
+          <pre id="profile-output">{}</pre>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      let accessToken = "";
+
+      async function request(url, options = {}) {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "request_failed");
+        }
+        return data;
+      }
+
+      document.getElementById("signup-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const username = document.getElementById("signup-username").value.trim();
+        const email = document.getElementById("signup-email").value.trim();
+        const password = document.getElementById("signup-password").value;
+        const status = document.getElementById("signup-status");
+
+        status.textContent = "회원가입 중...";
+
+        try {
+          await request("/api/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, email, password })
+          });
+
+          await request("/api/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username })
+          });
+
+          document.getElementById("login-username").value = username;
+          document.getElementById("login-password").value = password;
+          status.textContent = "회원가입과 관리자 확인이 완료되었습니다.";
+        } catch (error) {
+          status.textContent = error.message || "회원가입 실패";
+        }
+      });
+
+      document.getElementById("login-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const username = document.getElementById("login-username").value.trim();
+        const password = document.getElementById("login-password").value;
+        const status = document.getElementById("login-status");
+
+        status.textContent = "로그인 중...";
+
+        try {
+          const data = await request("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+          });
+
+          accessToken = data.accessToken;
+          status.textContent = "로그인 성공. 이제 프로필을 조회할 수 있습니다.";
+        } catch (error) {
+          status.textContent = error.message || "로그인 실패";
+        }
+      });
+
+      document.getElementById("profile-button").addEventListener("click", async () => {
+        const status = document.getElementById("profile-status");
+        const output = document.getElementById("profile-output");
+
+        if (!accessToken) {
+          status.textContent = "먼저 로그인하세요.";
+          return;
+        }
+
+        status.textContent = "프로필 조회 중...";
+
+        try {
+          const data = await request("/api/profile", {
+            headers: {
+              Authorization: `Bearer ${accessToken}`
+            }
+          });
+          output.textContent = JSON.stringify(data, null, 2);
+          status.textContent = "프로필 조회 성공";
+        } catch (error) {
+          status.textContent = error.message || "프로필 조회 실패";
+        }
+      });
+    </script>
+  </body>
+</html>

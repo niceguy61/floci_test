@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Order Processing Hands-on</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --panel: #fff;
+        --line: #d8e1ee;
+        --text: #16202a;
+        --muted: #627080;
+        --accent: #0f62fe;
+        --success: #067647;
+        --warning: #b54708;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        color: var(--text);
+        background: linear-gradient(180deg, #eff4fb 0%, #f9fbfd 100%);
+      }
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .hero h1 { margin: 0 0 8px; font-size: 34px; }
+      .hero p { margin: 0 0 24px; color: var(--muted); }
+      .grid {
+        display: grid;
+        grid-template-columns: 360px 1fr 320px;
+        gap: 20px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 10px 24px rgba(18, 31, 53, 0.05);
+      }
+      .card h2 { margin-top: 0; }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      .field input {
+        font: inherit;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      button {
+        font: inherit;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 14px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .status {
+        min-height: 24px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .list, .events {
+        display: grid;
+        gap: 12px;
+      }
+      .item {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+        background: #fbfdff;
+      }
+      .item h3 {
+        margin: 0 0 4px;
+        font-size: 16px;
+      }
+      .item p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        margin-top: 8px;
+      }
+      .badge.pending { background: #fff4e5; color: var(--warning); }
+      .badge.processing { background: #eef4ff; color: var(--accent); }
+      .badge.completed { background: #ecfdf3; color: var(--success); }
+      .empty {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      code {
+        background: #eef3fa;
+        border-radius: 6px;
+        padding: 2px 6px;
+      }
+      @media (max-width: 1100px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <h1>Order Processing Hands-on</h1>
+        <p>
+          이 예제는 <code>SQS + SNS + DynamoDB</code> 조합으로 주문 생성과 비동기 후처리를
+          <code>http://localhost:4566</code> 기준으로 실습합니다.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>주문 생성</h2>
+          <form id="order-form">
+            <label class="field">
+              <span>고객 이름</span>
+              <input id="customerName" required />
+            </label>
+            <label class="field">
+              <span>상품명</span>
+              <input id="itemName" required />
+            </label>
+            <label class="field">
+              <span>수량</span>
+              <input id="quantity" type="number" min="1" value="1" required />
+            </label>
+            <button id="submit-button" type="submit">주문 접수</button>
+            <div id="status" class="status"></div>
+          </form>
+        </article>
+
+        <article class="card">
+          <h2>주문 상태</h2>
+          <div id="orders" class="list"></div>
+        </article>
+
+        <article class="card">
+          <h2>최근 이벤트</h2>
+          <div id="events" class="events"></div>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("order-form");
+      const statusNode = document.getElementById("status");
+      const ordersNode = document.getElementById("orders");
+      const eventsNode = document.getElementById("events");
+      const submitButton = document.getElementById("submit-button");
+
+      function setStatus(message) {
+        statusNode.textContent = message;
+      }
+
+      function badgeClass(status) {
+        return `badge ${String(status || "").toLowerCase()}`;
+      }
+
+      function renderOrders(items) {
+        ordersNode.innerHTML = "";
+        if (!items.length) {
+          ordersNode.innerHTML = '<div class="empty">주문이 아직 없습니다.</div>';
+          return;
+        }
+        items.forEach((item) => {
+          const node = document.createElement("div");
+          node.className = "item";
+          node.innerHTML = `
+            <h3>${item.customerName} / ${item.itemName}</h3>
+            <p>수량: ${item.quantity}</p>
+            <p>주문 ID: <code>${item.id}</code></p>
+            <p>최근 갱신: <code>${item.updatedAt}</code></p>
+            <span class="${badgeClass(item.status)}">${item.status}</span>
+          `;
+          ordersNode.append(node);
+        });
+      }
+
+      function renderEvents(items) {
+        eventsNode.innerHTML = "";
+        if (!items.length) {
+          eventsNode.innerHTML = '<div class="empty">이벤트가 아직 없습니다.</div>';
+          return;
+        }
+        items.forEach((item) => {
+          const node = document.createElement("div");
+          node.className = "item";
+          node.innerHTML = `<p>${item.message}</p>`;
+          eventsNode.append(node);
+        });
+      }
+
+      async function refresh() {
+        const [ordersRes, eventsRes] = await Promise.all([
+          fetch("/api/orders"),
+          fetch("/api/events")
+        ]);
+
+        const orders = await ordersRes.json();
+        const events = await eventsRes.json();
+        renderOrders(orders.items || []);
+        renderEvents(events.items || []);
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        submitButton.disabled = true;
+        setStatus("주문을 접수하는 중입니다...");
+
+        try {
+          const payload = {
+            customerName: document.getElementById("customerName").value.trim(),
+            itemName: document.getElementById("itemName").value.trim(),
+            quantity: Number(document.getElementById("quantity").value)
+          };
+
+          const response = await fetch("/api/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || "주문 생성 실패");
+          }
+
+          form.reset();
+          document.getElementById("quantity").value = 1;
+          setStatus(`주문이 접수되었습니다. ID: ${data.id}`);
+          await refresh();
+        } catch (error) {
+          setStatus(error.message || "주문 생성 실패");
+        } finally {
+          submitButton.disabled = false;
+        }
+      });
+
+      refresh().catch(() => setStatus("주문 목록을 불러오지 못했습니다."));
+      setInterval(() => {
+        refresh().catch(() => {});
+      }, 2000);
+    </script>
+  </body>
+</html>

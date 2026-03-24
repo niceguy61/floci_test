@@ -8,7 +8,7 @@
 - 인프라 실습을 빠르게 반복하고 싶은 엔지니어
 - AWS 서비스를 로컬에서 먼저 체험해 보고 싶은 학습자
 
-이번 README의 범위는 `floci`의 개요, 지원 서비스, 요구사항, 설치/실행 방법, 예시 명령어, AWS 대비 제한사항, 그리고 향후 제공할 핸즈온 아키텍처 방향까지입니다. 실제 핸즈온 구현 문서는 후속 작업으로 분리합니다.
+이번 README의 범위는 `floci`의 개요, 지원 서비스, 요구사항, 설치/실행 방법, 예시 명령어, AWS 대비 제한사항, 그리고 실행 가능한 핸즈온과 향후 확장 방향까지입니다.
 
 ## 한눈에 보기
 
@@ -27,6 +27,36 @@
 - 기본 엔드포인트 하나(`http://localhost:4566`)로 여러 서비스를 함께 띄울 수 있다.
 
 즉, AWS를 완전히 대체하는 것이 목적이라기보다, 개발과 테스트 단계에서 AWS와 유사한 사용 흐름을 빠르게 검증하는 데 초점을 둔 도구라고 보는 편이 정확합니다.
+
+## 지금 바로 실행 가능한 핸즈온
+
+현재 이 저장소에는 아래 3개의 runnable hands-on이 있습니다.
+
+- [이미지 업로드 갤러리](./apps/image-gallery/README.md)
+- [주문 접수와 비동기 처리](./apps/order-processing/README.md)
+- [회원가입/로그인 포털](./apps/auth-portal/README.md)
+
+핵심 공통 규칙:
+
+- endpoint: `http://localhost:4566`
+- profile: `floci`
+- AWS 설정 파일: 저장소 내부 `.aws-local/`
+- 환경: `macOS`, `WSL Ubuntu`
+
+빠른 시작:
+
+```bash
+bash ops/bootstrap-floci.sh
+pnpm priority3:setup
+```
+
+전체 검증:
+
+```bash
+pnpm priority3:smoke
+```
+
+핸즈온 요약 인덱스는 [apps/README.md](./apps/README.md)에서 볼 수 있습니다.
 
 ## floci와 LocalStack을 어떻게 봐야 하나
 
@@ -479,7 +509,15 @@ flowchart LR
 
 ## 향후 제공할 핸즈온 아키텍처 방향
 
-이번 README에서는 방향만 제시하고, 실제 실습 문서는 후속 작업으로 분리합니다.
+이미 1차 우선순위 3개는 실행 가능한 상태로 만들었고, 아래 목록은 그 다음에 확장할 후보들입니다.
+
+### 1차 구현 예정
+
+- [이미지 업로드 갤러리](./apps/image-gallery/README.md)
+- [주문 접수와 비동기 처리](./apps/order-processing/README.md)
+- [회원가입/로그인 포털](./apps/auth-portal/README.md)
+
+### 이후 확장 후보
 
 - 단일 Web API + S3 + DynamoDB
 - 비동기 Worker + SQS + SNS
