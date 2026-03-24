@@ -50,6 +50,8 @@
 - AWS 설정 파일: 저장소 내부 `.aws-local/`
 - 환경: `macOS`, `WSL Ubuntu`
 
+서비스별 `AWS native vs floci` 차이와 미지원/보류 기능은 [docs/COMPATIBILITY.md](./docs/COMPATIBILITY.md)에서 따로 정리했습니다.
+
 빠른 시작:
 
 ```bash
