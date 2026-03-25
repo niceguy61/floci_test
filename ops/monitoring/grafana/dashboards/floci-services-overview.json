@@ -239,114 +239,6 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 8 },
-      "id": 6,
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "floci_s3_bucket_objects",
-          "legendFormat": "{{bucket}} objects",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "editorMode": "code",
-          "expr": "floci_s3_bucket_bytes",
-          "legendFormat": "{{bucket}} bytes",
-          "range": true,
-          "refId": "B"
-        }
-      ],
-      "title": "S3 Bucket Footprint",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "product-catalog-prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
-      "id": 7,
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "floci_cloudwatch_log_streams",
-          "legendFormat": "{{log_group}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "CloudWatch Log Streams",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "product-catalog-prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
-      "id": 8,
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "floci_cognito_users",
-          "legendFormat": "{{user_pool_name}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Cognito Users per Pool",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "product-catalog-prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
           "color": {
             "mode": "thresholds"
           },
@@ -367,7 +259,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 25 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
       "id": 9,
       "options": {
         "displayMode": "lcd",
@@ -420,7 +312,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
       "id": 10,
       "options": {
         "displayMode": "lcd",

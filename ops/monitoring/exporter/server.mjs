@@ -1,24 +1,17 @@
 import http from "node:http";
 import net from "node:net";
-import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { fileURLToPath } from "node:url";
 
 const execFileAsync = promisify(execFile);
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, "../../..");
-const awsLocalDir = path.join(rootDir, ".aws-local");
 
 const host = process.env.FLOCI_EXPORTER_HOST ?? "0.0.0.0";
 const port = Number(process.env.FLOCI_EXPORTER_PORT ?? 9464);
 const endpoint = process.env.AWS_ENDPOINT ?? "http://localhost:4566";
-const profile = process.env.AWS_PROFILE ?? "floci";
 const region = process.env.AWS_DEFAULT_REGION ?? "us-east-1";
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID ?? "test";
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY ?? "test";
+const refreshIntervalMs = Number(process.env.FLOCI_EXPORTER_REFRESH_MS ?? 30000);
 const handsOnApps = [
   { name: "image-gallery", port: 3001 },
   { name: "order-processing", port: 3002 },
@@ -48,16 +41,14 @@ async function runAwsJson(args) {
     ...process.env,
     AWS_ACCESS_KEY_ID: accessKeyId,
     AWS_SECRET_ACCESS_KEY: secretAccessKey,
-    AWS_DEFAULT_REGION: region,
-    AWS_CONFIG_FILE: process.env.AWS_CONFIG_FILE ?? path.join(awsLocalDir, "config"),
-    AWS_SHARED_CREDENTIALS_FILE:
-      process.env.AWS_SHARED_CREDENTIALS_FILE ?? path.join(awsLocalDir, "credentials")
+    AWS_DEFAULT_REGION: region
   };
 
-  const finalArgs = ["--profile", profile, "--endpoint-url", endpoint, ...args];
+  const finalArgs = ["--endpoint-url", endpoint, ...args];
   const { stdout } = await execFileAsync("aws", finalArgs, {
     env,
-    maxBuffer: 20 * 1024 * 1024
+    maxBuffer: 20 * 1024 * 1024,
+    timeout: 5000
   });
   return stdout ? JSON.parse(stdout) : {};
 }
@@ -108,19 +99,16 @@ async function collectMetrics() {
   ];
 
   pushGauge(lines, "floci_endpoint_up", await httpCheck(endpoint), {});
-  for (const app of handsOnApps) {
-    pushGauge(
-      lines,
-      "hands_on_app_up",
-      await httpCheck(`http://127.0.0.1:${app.port}/api/health`),
-      { app: app.name, port: app.port }
-    );
-    pushGauge(
-      lines,
-      "hands_on_app_metrics_up",
-      await httpCheck(`http://127.0.0.1:${app.port}/metrics`),
-      { app: app.name, port: app.port }
-    );
+  const appChecks = await Promise.all(
+    handsOnApps.map(async (app) => ({
+      app,
+      health: await httpCheck(`http://127.0.0.1:${app.port}/api/health`),
+      metrics: await httpCheck(`http://127.0.0.1:${app.port}/metrics`)
+    }))
+  );
+  for (const result of appChecks) {
+    pushGauge(lines, "hands_on_app_up", result.health, { app: result.app.name, port: result.app.port });
+    pushGauge(lines, "hands_on_app_metrics_up", result.metrics, { app: result.app.name, port: result.app.port });
   }
 
   try {
@@ -129,27 +117,6 @@ async function collectMetrics() {
     lines.push("# HELP floci_resource_total Count of emulated AWS resources discovered through floci.");
     lines.push("# TYPE floci_resource_total gauge");
     pushGauge(lines, "floci_resource_total", buckets.length, { service: "s3", resource: "bucket" });
-    lines.push("# HELP floci_s3_bucket_objects Count of objects currently stored in an emulated S3 bucket.");
-    lines.push("# TYPE floci_s3_bucket_objects gauge");
-    lines.push("# HELP floci_s3_bucket_bytes Total object size in bytes for an emulated S3 bucket.");
-    lines.push("# TYPE floci_s3_bucket_bytes gauge");
-    for (const bucket of buckets) {
-      const bucketName = bucket.Name;
-      if (!bucketName) {
-        continue;
-      }
-      try {
-        const objects = await runAwsJson(["s3api", "list-objects-v2", "--bucket", bucketName]);
-        const contents = objects.Contents ?? [];
-        pushGauge(lines, "floci_s3_bucket_objects", contents.length, { bucket: bucketName });
-        pushGauge(
-          lines,
-          "floci_s3_bucket_bytes",
-          contents.reduce((sum, item) => sum + Number(item.Size ?? 0), 0),
-          { bucket: bucketName }
-        );
-      } catch {}
-    }
   } catch {}
 
   try {
@@ -217,21 +184,6 @@ async function collectMetrics() {
     const cognito = await runAwsJson(["cognito-idp", "list-user-pools", "--max-results", "60"]);
     const pools = cognito.UserPools ?? [];
     pushGauge(lines, "floci_resource_total", pools.length, { service: "cognito-idp", resource: "user_pool" });
-    lines.push("# HELP floci_cognito_users Count of users in an emulated Cognito user pool.");
-    lines.push("# TYPE floci_cognito_users gauge");
-    for (const pool of pools) {
-      const userPoolId = pool.Id;
-      if (!userPoolId) {
-        continue;
-      }
-      try {
-        const users = await runAwsJson(["cognito-idp", "list-users", "--user-pool-id", userPoolId]);
-        pushGauge(lines, "floci_cognito_users", (users.Users ?? []).length, {
-          user_pool_id: userPoolId,
-          user_pool_name: pool.Name ?? userPoolId
-        });
-      } catch {}
-    }
   } catch {}
 
   try {
@@ -264,54 +216,25 @@ async function collectMetrics() {
     const groups = await runAwsJson(["logs", "describe-log-groups"]);
     const logGroups = groups.logGroups ?? [];
     pushGauge(lines, "floci_resource_total", logGroups.length, { service: "cloudwatchlogs", resource: "log_group" });
-    lines.push("# HELP floci_cloudwatch_log_streams Count of streams in an emulated CloudWatch Logs group.");
-    lines.push("# TYPE floci_cloudwatch_log_streams gauge");
-    lines.push("# HELP floci_cloudwatch_log_events Count of log events in an emulated CloudWatch Logs stream.");
-    lines.push("# TYPE floci_cloudwatch_log_events gauge");
-    for (const group of logGroups) {
-      const groupName = group.logGroupName;
-      if (!groupName) {
-        continue;
-      }
-      try {
-        const streams = await runAwsJson([
-          "logs",
-          "describe-log-streams",
-          "--log-group-name",
-          groupName
-        ]);
-        const logStreams = streams.logStreams ?? [];
-        pushGauge(lines, "floci_cloudwatch_log_streams", logStreams.length, { log_group: groupName });
-        for (const stream of logStreams) {
-          const streamName = stream.logStreamName;
-          if (!streamName) {
-            continue;
-          }
-          try {
-            const events = await runAwsJson([
-              "logs",
-              "get-log-events",
-              "--log-group-name",
-              groupName,
-              "--log-stream-name",
-              streamName
-            ]);
-            pushGauge(lines, "floci_cloudwatch_log_events", (events.events ?? []).length, {
-              log_group: groupName,
-              log_stream: streamName
-            });
-          } catch {}
-        }
-      } catch {}
-    }
   } catch {}
 
   try {
     const rds = await runAwsJson(["rds", "describe-db-instances"]);
     const instances = rds.DBInstances ?? [];
     pushGauge(lines, "floci_resource_total", instances.length, { service: "rds", resource: "instance" });
-    for (const instance of instances) {
-      const identifier = instance.DBInstanceIdentifier ?? "unknown";
+    const checks = await Promise.all(
+      instances.map(async (instance) => {
+        const identifier = instance.DBInstanceIdentifier ?? "unknown";
+        const tcpUp =
+          instance.Endpoint?.Address && instance.Endpoint?.Port
+            ? await tcpCheck(instance.Endpoint.Address, instance.Endpoint.Port)
+            : 0;
+        return { instance, identifier, tcpUp };
+      })
+    );
+    for (const result of checks) {
+      const instance = result.instance;
+      const identifier = result.identifier;
       pushGauge(lines, "floci_rds_instance_status", 1, {
         instance: identifier,
         status: instance.DBInstanceStatus ?? "UNKNOWN",
@@ -324,7 +247,7 @@ async function collectMetrics() {
         pushGauge(
           lines,
           "floci_proxy_tcp_up",
-          await tcpCheck(instance.Endpoint.Address, instance.Endpoint.Port),
+          result.tcpUp,
           { service: "rds", name: identifier, port: instance.Endpoint.Port }
         );
       }
@@ -335,8 +258,19 @@ async function collectMetrics() {
     const cache = await runAwsJson(["elasticache", "describe-replication-groups"]);
     const groups = cache.ReplicationGroups ?? [];
     pushGauge(lines, "floci_resource_total", groups.length, { service: "elasticache", resource: "replication_group" });
-    for (const group of groups) {
-      const identifier = group.ReplicationGroupId ?? "unknown";
+    const checks = await Promise.all(
+      groups.map(async (group) => {
+        const identifier = group.ReplicationGroupId ?? "unknown";
+        const tcpUp =
+          group.ConfigurationEndpoint?.Address && group.ConfigurationEndpoint?.Port
+            ? await tcpCheck(group.ConfigurationEndpoint.Address, group.ConfigurationEndpoint.Port)
+            : 0;
+        return { group, identifier, tcpUp };
+      })
+    );
+    for (const result of checks) {
+      const group = result.group;
+      const identifier = result.identifier;
       pushGauge(lines, "floci_elasticache_replication_group_status", 1, {
         replication_group: identifier,
         status: group.Status ?? "unknown"
@@ -350,7 +284,7 @@ async function collectMetrics() {
         pushGauge(
           lines,
           "floci_proxy_tcp_up",
-          await tcpCheck(group.ConfigurationEndpoint.Address, group.ConfigurationEndpoint.Port),
+          result.tcpUp,
           { service: "elasticache", name: identifier, port: group.ConfigurationEndpoint.Port }
         );
       }
@@ -360,10 +294,38 @@ async function collectMetrics() {
   return `${lines.join("\n")}\n`;
 }
 
+let lastMetrics = "# HELP floci_exporter_collect_ok Whether the exporter has completed at least one collection.\n# TYPE floci_exporter_collect_ok gauge\nfloci_exporter_collect_ok 0\n";
+let lastCollectionError = "";
+let collecting = null;
+
+async function refreshMetrics() {
+  if (collecting) {
+    return collecting;
+  }
+
+  collecting = (async () => {
+    try {
+      const metrics = await collectMetrics();
+      lastMetrics = `${metrics}# HELP floci_exporter_collect_ok Whether the exporter has completed at least one collection.\n# TYPE floci_exporter_collect_ok gauge\nfloci_exporter_collect_ok 1\n`;
+      lastCollectionError = "";
+    } catch (error) {
+      lastCollectionError = error instanceof Error ? error.message : "unknown_error";
+      lastMetrics = `# HELP floci_exporter_collect_ok Whether the exporter has completed at least one collection.\n# TYPE floci_exporter_collect_ok gauge\nfloci_exporter_collect_ok 0\n# HELP floci_exporter_collect_error Whether the latest collection failed.\n# TYPE floci_exporter_collect_error gauge\nfloci_exporter_collect_error 1\n`;
+    } finally {
+      collecting = null;
+    }
+  })();
+
+  return collecting;
+}
+
 const server = http.createServer(async (req, res) => {
   if ((req.url ?? "/") === "/health") {
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-    res.end(JSON.stringify({ status: "ok", endpoint, profile }));
+    res.end(JSON.stringify({ status: "ok", endpoint, lastCollectionError }));
+    if (!collecting) {
+      refreshMetrics().catch(() => {});
+    }
     return;
   }
 
@@ -374,9 +336,11 @@ const server = http.createServer(async (req, res) => {
   }
 
   try {
-    const metrics = await collectMetrics();
     res.writeHead(200, { "Content-Type": "text/plain; version=0.0.4; charset=utf-8" });
-    res.end(metrics);
+    res.end(lastMetrics);
+    if (!collecting) {
+      refreshMetrics().catch(() => {});
+    }
   } catch (error) {
     res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({ error: error instanceof Error ? error.message : "unknown_error" }));
@@ -386,4 +350,7 @@ const server = http.createServer(async (req, res) => {
 server.listen(port, host, () => {
   console.log(`floci exporter listening on http://${host}:${port}`);
   console.log(`floci endpoint: ${endpoint}`);
+  setInterval(() => {
+    refreshMetrics().catch(() => {});
+  }, refreshIntervalMs).unref();
 });

@@ -16,6 +16,25 @@ services:
       FLOCI_STORAGE_PERSISTENT_PATH: /app/data
       FLOCI_SERVICES_DOCKER_NETWORK: ops_default
 
+  floci-exporter:
+    build:
+      context: ..
+      dockerfile: ops/monitoring/exporter/Dockerfile
+    container_name: floci-exporter
+    depends_on:
+      - floci
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT: http://floci:4566
+      FLOCI_EXPORTER_HOST: 0.0.0.0
+      FLOCI_EXPORTER_PORT: 9464
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "9464:9464"
+
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: hands-on-prometheus
