@@ -4,6 +4,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
+import { createObservability } from "../../_shared/observability.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -20,6 +21,11 @@ const region = process.env.AWS_DEFAULT_REGION ?? "us-east-1";
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID ?? "test";
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY ?? "test";
 const prefix = process.env.FEATURE_FLAGS_PREFIX ?? "/app/flags";
+const host = process.env.FEATURE_FLAGS_HOST ?? "0.0.0.0";
+const observability = createObservability({
+  appName: "feature-flags",
+  logFile: path.resolve(__dirname, "../.runtime/feature-flags.log")
+});
 
 function json(res, statusCode, body) {
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
@@ -107,6 +113,12 @@ async function putFlag(payload) {
     "--overwrite"
   ]);
 
+  observability.incrementDomainEvent("feature_flag", "write");
+  observability.logEvent("info", "feature_flag_write", {
+    name,
+    value
+  });
+
   return {
     name,
     value,
@@ -120,50 +132,95 @@ async function sendIndex(res) {
   res.end(html);
 }
 
+function normalizedRoute(method, pathname) {
+  if (method === "GET" && pathname === observability.metricsPath) {
+    return observability.metricsPath;
+  }
+  if (method === "GET" && pathname === "/api/flags") {
+    return "/api/flags";
+  }
+  if (method === "POST" && pathname === "/api/flags") {
+    return "/api/flags";
+  }
+  if (/^\/api\/flags\/[^/]+$/.test(pathname)) {
+    return "/api/flags/:name";
+  }
+  return pathname;
+}
+
 const server = http.createServer(async (req, res) => {
+  const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+  const route = normalizedRoute(req.method ?? "GET", requestUrl.pathname);
+  const started = process.hrtime.bigint();
+  let statusCode = 500;
+
   try {
-    const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
     // 작은 대시보드와 Parameter Store API를 한 프로세스에서 제공해 이해를 단순화한다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);
+      statusCode = 200;
+      return;
+    }
+
+    if (observability.maybeHandleMetrics(req, res, requestUrl.pathname)) {
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/health") {
-      json(res, 200, {
-        status: "ok",
-        endpoint,
-        profile,
-        prefix
-      });
+      json(res, 200, observability.healthFields({ status: "ok", endpoint, profile, prefix }));
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/flags") {
       json(res, 200, { items: await listFlags() });
+      statusCode = 200;
       return;
     }
 
     if (req.method === "POST" && requestUrl.pathname === "/api/flags") {
       json(res, 201, await putFlag(await readJsonBody(req)));
+      statusCode = 201;
       return;
     }
 
     const match = requestUrl.pathname.match(/^\/api\/flags\/([^/]+)$/);
     if (req.method === "GET" && match) {
       json(res, 200, await getFlag(decodeURIComponent(match[1])));
+      statusCode = 200;
       return;
     }
 
     json(res, 404, { error: "not_found" });
+    statusCode = 404;
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown_error";
-    json(res, message === "invalid_payload" ? 400 : 500, { error: message });
+    statusCode = message === "invalid_payload" ? 400 : 500;
+    observability.logEvent("error", "request_failed", {
+      route,
+      method: req.method ?? "GET",
+      error: message
+    });
+    json(res, statusCode, { error: message });
+  } finally {
+    observability.recordHttp({
+      method: req.method ?? "GET",
+      route,
+      statusCode,
+      durationMs: Number(process.hrtime.bigint() - started) / 1_000_000
+    });
   }
 });
 
-server.listen(port, "127.0.0.1", () => {
+server.listen(port, host, () => {
   console.log(`feature-flags server listening on http://127.0.0.1:${port}`);
   console.log(`floci endpoint: ${endpoint}`);
+  observability.logEvent("info", "server_started", {
+    port,
+    endpoint,
+    metricsPath: observability.metricsPath,
+    logFile: observability.logFile
+  });
 });

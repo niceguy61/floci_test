@@ -2,6 +2,8 @@ services:
   floci:
     image: hectorvent/floci:latest
     container_name: floci
+    group_add:
+      - "1001"
     ports:
       - "4566:4566"
       - "6379-6399:6379-6399"
@@ -13,3 +15,64 @@ services:
       FLOCI_STORAGE_MODE: persistent
       FLOCI_STORAGE_PERSISTENT_PATH: /app/data
       FLOCI_SERVICES_DOCKER_NETWORK: ops_default
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: hands-on-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    ports:
+      - "9091:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - hands-on-prometheus-data:/prometheus
+
+  loki:
+    image: grafana/loki:3.2.1
+    container_name: hands-on-loki
+    command:
+      - -config.file=/etc/loki/config.yml
+    ports:
+      - "3101:3100"
+    volumes:
+      - ./monitoring/loki/config.yml:/etc/loki/config.yml:ro
+      - hands-on-loki-data:/loki
+
+  promtail:
+    image: grafana/promtail:3.2.1
+    container_name: hands-on-promtail
+    command:
+      - -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    volumes:
+      - ./monitoring/promtail/config.yml:/etc/promtail/config.yml:ro
+      - ../apps:/workspace-apps:ro
+      - hands-on-promtail-data:/tmp
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    container_name: hands-on-grafana
+    depends_on:
+      - prometheus
+      - loki
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3012:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - hands-on-grafana-data:/var/lib/grafana
+
+volumes:
+  hands-on-prometheus-data:
+  hands-on-loki-data:
+  hands-on-promtail-data:
+  hands-on-grafana-data:

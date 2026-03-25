@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import sharp from "sharp";
+import { createObservability } from "../../_shared/observability.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -28,6 +29,11 @@ const table = process.env.IMAGE_GALLERY_TABLE ?? "image_metadata";
 const maxOriginalBytes = Number(process.env.IMAGE_GALLERY_MAX_BYTES ?? 1024 * 1024);
 const resizedMaxWidth = Number(process.env.IMAGE_GALLERY_RESIZED_MAX_WIDTH ?? 1280);
 const thumbnailWidth = Number(process.env.IMAGE_GALLERY_THUMBNAIL_WIDTH ?? 320);
+const host = process.env.IMAGE_GALLERY_HOST ?? "0.0.0.0";
+const observability = createObservability({
+  appName: "image-gallery",
+  logFile: path.resolve(__dirname, "../.runtime/image-gallery.log")
+});
 
 function json(res, statusCode, body) {
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
@@ -247,6 +253,14 @@ async function uploadImage(payload) {
         uploadedAt: { S: uploadedAt }
       })
     ]);
+
+    observability.incrementDomainEvent("image", "upload");
+    observability.logEvent("info", "image_uploaded", {
+      id,
+      title,
+      originalBytes,
+      wasResized: originalBytes > maxOriginalBytes
+    });
   } finally {
     await rm(tmpDir, { recursive: true, force: true });
   }
@@ -278,6 +292,17 @@ async function sendStaticIndex(res) {
   const html = await readFile(path.join(webRoot, "index.html"), "utf8");
   res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
   res.end(html);
+}
+
+function normalizedRoute(method, pathname) {
+  if (method === "GET" && pathname === observability.metricsPath) return observability.metricsPath;
+  if (method === "GET" && pathname === "/api/images") return "/api/images";
+  if (method === "POST" && pathname === "/api/images") return "/api/images";
+  if (/^\/api\/images\/[^/]+$/.test(pathname)) return "/api/images/:id";
+  if (/^\/api\/images\/[^/]+\/file$/.test(pathname)) return "/api/images/:id/file";
+  if (/^\/api\/images\/[^/]+\/original$/.test(pathname)) return "/api/images/:id/original";
+  if (/^\/api\/images\/[^/]+\/thumbnail$/.test(pathname)) return "/api/images/:id/thumbnail";
+  return pathname;
 }
 
 async function sendS3Object(res, key, contentType, filename) {
@@ -323,29 +348,40 @@ async function sendS3Object(res, key, contentType, filename) {
 }
 
 const server = http.createServer(async (req, res) => {
+  const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+  const route = normalizedRoute(req.method ?? "GET", requestUrl.pathname);
+  const started = process.hrtime.bigint();
+  let statusCode = 500;
   try {
-    const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
     // 갤러리 UI와 이미지 API를 한 프로세스에 두어 흐름을 읽기 쉽게 만든다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendStaticIndex(res);
+      statusCode = 200;
+      return;
+    }
+
+    if (observability.maybeHandleMetrics(req, res, requestUrl.pathname)) {
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/health") {
-      json(res, 200, {
+      json(res, 200, observability.healthFields({
         status: "ok",
         endpoint,
         profile,
         bucket,
         table
-      });
+      }));
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/images") {
       const items = await listImages();
       json(res, 200, { items });
+      statusCode = 200;
       return;
     }
 
@@ -353,6 +389,7 @@ const server = http.createServer(async (req, res) => {
       const payload = await readJsonBody(req);
       const image = await uploadImage(payload);
       json(res, 201, image);
+      statusCode = 201;
       return;
     }
 
@@ -361,9 +398,11 @@ const server = http.createServer(async (req, res) => {
       const image = await getImage(detailMatch[1]);
       if (!image) {
         notFound(res);
+        statusCode = 404;
         return;
       }
       json(res, 200, image);
+      statusCode = 200;
       return;
     }
 
@@ -372,6 +411,7 @@ const server = http.createServer(async (req, res) => {
       const image = await getImage(fileMatch[1]);
       if (!image) {
         notFound(res);
+        statusCode = 404;
         return;
       }
       await sendS3Object(
@@ -380,6 +420,7 @@ const server = http.createServer(async (req, res) => {
         image.contentType,
         `${image.id}-display.webp`
       );
+      statusCode = 200;
       return;
     }
 
@@ -388,6 +429,7 @@ const server = http.createServer(async (req, res) => {
       const image = await getImage(originalMatch[1]);
       if (!image) {
         notFound(res);
+        statusCode = 404;
         return;
       }
       await sendS3Object(
@@ -396,6 +438,7 @@ const server = http.createServer(async (req, res) => {
         image.originalContentType,
         image.filename || `${image.id}-original.bin`
       );
+      statusCode = 200;
       return;
     }
 
@@ -404,6 +447,7 @@ const server = http.createServer(async (req, res) => {
       const image = await getImage(thumbnailMatch[1]);
       if (!image) {
         notFound(res);
+        statusCode = 404;
         return;
       }
       await sendS3Object(
@@ -412,21 +456,32 @@ const server = http.createServer(async (req, res) => {
         "image/webp",
         `${image.id}-thumbnail.webp`
       );
+      statusCode = 200;
       return;
     }
 
     notFound(res);
+    statusCode = 404;
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown_error";
-    const statusCode =
+    statusCode =
       message === "payload_too_large" ? 413 :
       message === "invalid_payload" ? 400 :
       500;
+    observability.logEvent("error", "request_failed", { route, method: req.method ?? "GET", error: message });
     json(res, statusCode, { error: message });
+  } finally {
+    observability.recordHttp({
+      method: req.method ?? "GET",
+      route,
+      statusCode,
+      durationMs: Number(process.hrtime.bigint() - started) / 1_000_000
+    });
   }
 });
 
-server.listen(port, "127.0.0.1", () => {
+server.listen(port, host, () => {
   console.log(`image-gallery server listening on http://127.0.0.1:${port}`);
   console.log(`floci endpoint: ${endpoint}`);
+  observability.logEvent("info", "server_started", { port, endpoint, metricsPath: observability.metricsPath, logFile: observability.logFile });
 });

@@ -4,6 +4,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
+import { createObservability } from "../../_shared/observability.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -22,6 +23,11 @@ const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY ?? "test";
 const topicName = process.env.ALERT_CENTER_TOPIC_NAME ?? "alert-center-topic";
 const queueA = process.env.ALERT_CENTER_QUEUE_A ?? "alert-center-subscriber-a";
 const queueB = process.env.ALERT_CENTER_QUEUE_B ?? "alert-center-subscriber-b";
+const host = process.env.ALERT_CENTER_HOST ?? "0.0.0.0";
+const observability = createObservability({
+  appName: "alert-center",
+  logFile: path.resolve(__dirname, "../.runtime/alert-center.log")
+});
 
 function json(res, statusCode, body) {
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
@@ -85,6 +91,9 @@ async function publishAlert(payload) {
     message
   ]);
 
+  observability.incrementDomainEvent("alert", "publish");
+  observability.logEvent("info", "alert_published", { title });
+
   return {
     messageId: result.MessageId,
     title,
@@ -131,35 +140,55 @@ async function sendIndex(res) {
   res.end(html);
 }
 
+function normalizedRoute(method, pathname) {
+  if (method === "GET" && pathname === observability.metricsPath) return observability.metricsPath;
+  if (method === "GET" && pathname === "/api/topic") return "/api/topic";
+  if (method === "POST" && pathname === "/api/publish") return "/api/publish";
+  if (method === "GET" && pathname === "/api/subscribers") return "/api/subscribers";
+  return pathname;
+}
+
 const server = http.createServer(async (req, res) => {
+  const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+  const route = normalizedRoute(req.method ?? "GET", requestUrl.pathname);
+  const started = process.hrtime.bigint();
+  let statusCode = 500;
   try {
-    const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
     // hands-on을 단일 프로세스로 이해할 수 있게 정적 UI와 API를 한 서버에 묶는다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);
+      statusCode = 200;
+      return;
+    }
+
+    if (observability.maybeHandleMetrics(req, res, requestUrl.pathname)) {
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/health") {
-      json(res, 200, {
+      json(res, 200, observability.healthFields({
         status: "ok",
         endpoint,
         profile,
         topicName,
         queueA,
         queueB
-      });
+      }));
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/topic") {
       json(res, 200, { topicArn: await getTopicArn(), topicName });
+      statusCode = 200;
       return;
     }
 
     if (req.method === "POST" && requestUrl.pathname === "/api/publish") {
       json(res, 201, await publishAlert(await readJsonBody(req)));
+      statusCode = 201;
       return;
     }
 
@@ -168,17 +197,29 @@ const server = http.createServer(async (req, res) => {
         subscriberA: await receiveQueueMessages(queueA),
         subscriberB: await receiveQueueMessages(queueB)
       });
+      statusCode = 200;
       return;
     }
 
     json(res, 404, { error: "not_found" });
+    statusCode = 404;
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown_error";
-    json(res, message === "invalid_payload" ? 400 : 500, { error: message });
+    statusCode = message === "invalid_payload" ? 400 : 500;
+    observability.logEvent("error", "request_failed", { route, method: req.method ?? "GET", error: message });
+    json(res, statusCode, { error: message });
+  } finally {
+    observability.recordHttp({
+      method: req.method ?? "GET",
+      route,
+      statusCode,
+      durationMs: Number(process.hrtime.bigint() - started) / 1_000_000
+    });
   }
 });
 
-server.listen(port, "127.0.0.1", () => {
+server.listen(port, host, () => {
   console.log(`alert-center server listening on http://127.0.0.1:${port}`);
   console.log(`floci endpoint: ${endpoint}`);
+  observability.logEvent("info", "server_started", { port, endpoint, metricsPath: observability.metricsPath, logFile: observability.logFile });
 });

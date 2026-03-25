@@ -4,6 +4,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
+import { createObservability } from "../../_shared/observability.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -20,6 +21,11 @@ const region = process.env.AWS_DEFAULT_REGION ?? "us-east-1";
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID ?? "test";
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY ?? "test";
 const stream = process.env.STREAM_INSPECTOR_STREAM ?? "stream-inspector-stream";
+const host = process.env.STREAM_INSPECTOR_HOST ?? "0.0.0.0";
+const observability = createObservability({
+  appName: "stream-inspector",
+  logFile: path.resolve(__dirname, "../.runtime/stream-inspector.log")
+});
 
 function json(res, statusCode, body) {
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
@@ -83,6 +89,9 @@ async function publishRecord(payload) {
     encoded
   ]);
 
+  observability.incrementDomainEvent("stream", "publish");
+  observability.logEvent("info", "stream_record_published", { partitionKey, stream });
+
   return {
     partitionKey,
     sequenceNumber: result.SequenceNumber,
@@ -129,44 +138,76 @@ async function sendIndex(res) {
   res.end(html);
 }
 
+function normalizedRoute(method, pathname) {
+  if (method === "GET" && pathname === observability.metricsPath) return observability.metricsPath;
+  if (method === "GET" && pathname === "/api/stream") return "/api/stream";
+  if (method === "GET" && pathname === "/api/records") return "/api/records";
+  if (method === "POST" && pathname === "/api/records") return "/api/records";
+  return pathname;
+}
+
 const server = http.createServer(async (req, res) => {
+  const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+  const route = normalizedRoute(req.method ?? "GET", requestUrl.pathname);
+  const started = process.hrtime.bigint();
+  let statusCode = 500;
   try {
-    const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
     // 생산자/소비자 흐름을 가볍게 실험할 수 있게 정적 페이지와 API를 한 서버에 둔다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);
+      statusCode = 200;
+      return;
+    }
+
+    if (observability.maybeHandleMetrics(req, res, requestUrl.pathname)) {
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/health") {
-      json(res, 200, { status: "ok", endpoint, profile, stream });
+      json(res, 200, observability.healthFields({ status: "ok", endpoint, profile, stream }));
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/stream") {
       json(res, 200, await getStreamInfo());
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/records") {
       json(res, 200, { items: await listRecords() });
+      statusCode = 200;
       return;
     }
 
     if (req.method === "POST" && requestUrl.pathname === "/api/records") {
       json(res, 201, await publishRecord(await readJsonBody(req)));
+      statusCode = 201;
       return;
     }
 
     json(res, 404, { error: "not_found" });
+    statusCode = 404;
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown_error";
-    json(res, message === "invalid_payload" ? 400 : 500, { error: message });
+    statusCode = message === "invalid_payload" ? 400 : 500;
+    observability.logEvent("error", "request_failed", { route, method: req.method ?? "GET", error: message });
+    json(res, statusCode, { error: message });
+  } finally {
+    observability.recordHttp({
+      method: req.method ?? "GET",
+      route,
+      statusCode,
+      durationMs: Number(process.hrtime.bigint() - started) / 1_000_000
+    });
   }
 });
 
-server.listen(port, "127.0.0.1", () => {
+server.listen(port, host, () => {
   console.log(`stream-inspector server listening on http://127.0.0.1:${port}`);
   console.log(`floci endpoint: ${endpoint}`);
+  observability.logEvent("info", "server_started", { port, endpoint, metricsPath: observability.metricsPath, logFile: observability.logFile });
 });

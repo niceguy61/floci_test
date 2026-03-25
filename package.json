@@ -14,6 +14,8 @@
     "priority3:smoke": "bash apps/image-gallery/checks/smoke.sh && bash apps/order-processing/checks/smoke.sh && bash apps/auth-portal/checks/smoke.sh",
     "all10:setup": "bash apps/image-gallery/scripts/setup.sh && bash apps/order-processing/scripts/setup.sh && bash apps/auth-portal/scripts/setup.sh && bash apps/todo-logs/scripts/setup.sh && bash apps/alert-center/scripts/setup.sh && bash apps/file-pipeline/scripts/setup.sh && bash apps/secret-vault/scripts/setup.sh && bash apps/feature-flags/scripts/setup.sh && bash apps/stream-inspector/scripts/setup.sh && bash apps/cloudformation-playground/scripts/setup.sh",
     "all10:smoke": "bash apps/image-gallery/checks/smoke.sh && bash apps/order-processing/checks/smoke.sh && bash apps/auth-portal/checks/smoke.sh && bash apps/todo-logs/checks/smoke.sh && bash apps/alert-center/checks/smoke.sh && bash apps/file-pipeline/checks/smoke.sh && bash apps/secret-vault/checks/smoke.sh && bash apps/feature-flags/checks/smoke.sh && bash apps/stream-inspector/checks/smoke.sh && bash apps/cloudformation-playground/checks/smoke.sh",
+    "all11:setup": "npm run all10:setup && bash apps/product-catalog-cache/scripts/setup.sh",
+    "all11:smoke": "npm run all10:smoke && bash apps/product-catalog-cache/checks/smoke.sh",
     "image-gallery:setup": "bash apps/image-gallery/scripts/setup.sh",
     "image-gallery:dev": "node apps/image-gallery/api/server.mjs",
     "image-gallery:smoke": "bash apps/image-gallery/checks/smoke.sh",
@@ -45,7 +47,14 @@
     "stream-inspector:smoke": "bash apps/stream-inspector/checks/smoke.sh",
     "cloudformation-playground:setup": "bash apps/cloudformation-playground/scripts/setup.sh",
     "cloudformation-playground:dev": "node apps/cloudformation-playground/api/server.mjs",
-    "cloudformation-playground:smoke": "bash apps/cloudformation-playground/checks/smoke.sh"
+    "cloudformation-playground:smoke": "bash apps/cloudformation-playground/checks/smoke.sh",
+    "product-catalog-cache:setup": "bash apps/product-catalog-cache/scripts/setup.sh",
+    "product-catalog-cache:dev": "node apps/product-catalog-cache/api/server.mjs",
+    "product-catalog-cache:bootstrap:monitoring": "bash ops/bootstrap-product-catalog-monitoring.sh",
+    "product-catalog-cache:smoke": "bash apps/product-catalog-cache/checks/smoke.sh",
+    "product-catalog-cache:monitoring:up": "docker compose -f ops/docker-compose.floci.yml up -d grafana prometheus loki promtail",
+    "product-catalog-cache:monitoring:down": "docker compose -f ops/docker-compose.floci.yml stop grafana prometheus loki promtail",
+    "product-catalog-cache:monitoring:smoke": "bash ops/monitoring/checks/product-catalog-cache-smoke.sh"
   },
   "dependencies": {
     "sharp": "^0.34.5"

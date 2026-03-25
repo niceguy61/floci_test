@@ -1,0 +1,84 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.6.1 Chrome/142.0.7444.265 Electron/39.8.0 Safari/537.36" version="29.6.1">
+  <diagram id="product-catalog-cache" name="페이지-1">
+    <mxGraphModel dx="1678" dy="989" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1220" pageHeight="720" math="0" shadow="0" adaptiveColors="auto">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=24;fontStyle=1;" value="Product Catalog Cache" vertex="1">
+          <mxGeometry height="32" width="420" x="40" y="24" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontColor=#4b5563;" value="Web UI + API server with RDS source of truth and ElastiCache cache-aside flow" vertex="1">
+          <mxGeometry height="22" width="760" x="40" y="56" as="geometry" />
+        </mxCell>
+        <mxCell id="client_box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 8;arcSize=10;strokeWidth=2;strokeColor=#7f8ea3;fillColor=none;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;fontSize=15;fontStyle=1;" value="Client" vertex="1">
+          <mxGeometry height="540" width="240" x="40" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime_box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 8;arcSize=10;strokeWidth=2;strokeColor=#7f8ea3;fillColor=none;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;fontSize=15;fontStyle=1;" value="Local app runtime" vertex="1">
+          <mxGeometry height="540" width="260" x="320" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="aws_box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 8;arcSize=10;strokeWidth=2;strokeColor=#7f8ea3;fillColor=none;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;fontSize=15;fontStyle=1;" value="floci endpoint / AWS local services" vertex="1">
+          <mxGeometry height="540" width="340" x="620" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="user" parent="1" style="shape=image;verticalLabelPosition=top;verticalAlign=bottom;labelPosition=center;align=center;imageAspect=0;aspect=fixed;html=1;whiteSpace=wrap;spacingTop=6;fontSize=14;fontStyle=0;image=data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20width%3D%2248px%22%20height%3D%2248px%22%20viewBox%3D%220%200%2048%2048%22%20version%3D%221.1%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%3E%0A%20%20%20%20%3Ctitle%3EIcon-Resource%2FGeneral-Resource%2FRes_Users_48_Light%3C%2Ftitle%3E%0A%20%20%20%20%3Cg%20id%3D%22Icon-Resource%2FGeneral-Resource%2FRes_Users_48%22%20stroke%3D%22none%22%20stroke-width%3D%221%22%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%0A%20%20%20%20%20%20%20%20%3Cpath%20d%3D%22M28.639%2C9.286%20C28.639%2C6.371%2031.052%2C4%2034.019%2C4%20C36.985%2C4%2039.397%2C6.371%2039.397%2C9.286%20C39.397%2C12.201%2036.985%2C14.572%2034.019%2C14.572%20C31.052%2C14.572%2028.639%2C12.201%2028.639%2C9.286%20L28.639%2C9.286%20Z%20M40.163%2C16.334%20C39.516%2C15.932%2038.833%2C15.6%2038.128%2C15.333%20C40.098%2C14.023%2041.397%2C11.802%2041.397%2C9.286%20C41.397%2C5.269%2038.087%2C2%2034.019%2C2%20C29.95%2C2%2026.639%2C5.269%2026.639%2C9.286%20C26.639%2C11.796%2027.932%2C14.014%2029.895%2C15.325%20C28.614%2C15.808%2027.41%2C16.515%2026.349%2C17.425%20L27.652%2C18.943%20C29.434%2C17.414%2031.689%2C16.572%2034%2C16.572%20C35.802%2C16.572%2037.569%2C17.077%2039.109%2C18.033%20C41.849%2C19.735%2043.647%2C22.725%2043.953%2C26%20L34%2C26%20L34%2C28%20L45%2C28%20C45.553%2C28%2046%2C27.553%2046%2C27%20C46%2C22.657%2043.764%2C18.57%2040.163%2C16.334%20L40.163%2C16.334%20Z%20M8.639%2C9.286%20C8.639%2C6.371%2011.052%2C4%2014.019%2C4%20C16.985%2C4%2019.397%2C6.371%2019.397%2C9.286%20C19.397%2C12.201%2016.985%2C14.572%2014.019%2C14.572%20C11.052%2C14.572%208.639%2C12.201%208.639%2C9.286%20L8.639%2C9.286%20Z%20M14%2C26%20L4.046%2C26%20C4.53%2C20.717%208.81%2C16.572%2014%2C16.572%20C15.802%2C16.572%2017.569%2C17.077%2019.109%2C18.033%20C19.541%2C18.302%2019.958%2C18.608%2020.349%2C18.943%20L21.652%2C17.426%20C21.184%2C17.024%2020.684%2C16.657%2020.163%2C16.334%20C19.516%2C15.932%2018.833%2C15.6%2018.128%2C15.333%20C20.098%2C14.023%2021.397%2C11.802%2021.397%2C9.286%20C21.397%2C5.269%2018.087%2C2%2014.019%2C2%20C9.95%2C2%206.639%2C5.269%206.639%2C9.286%20C6.639%2C11.801%207.937%2C14.023%209.907%2C15.332%20C5.302%2C17.071%202%2C21.638%202%2C27%20C2%2C27.553%202.448%2C28%203%2C28%20L14%2C28%20L14%2C26%20Z%20M14.046%2C44%20C14.53%2C38.717%2018.81%2C34.572%2024%2C34.572%20C25.802%2C34.572%2027.569%2C35.077%2029.109%2C36.033%20C31.849%2C37.735%2033.647%2C40.725%2033.953%2C44%20L14.046%2C44%20Z%20M18.639%2C27.286%20C18.639%2C24.371%2021.052%2C22%2024.019%2C22%20C26.985%2C22%2029.397%2C24.371%2029.397%2C27.286%20C29.397%2C30.201%2026.985%2C32.572%2024.019%2C32.572%20C21.052%2C32.572%2018.639%2C30.201%2018.639%2C27.286%20L18.639%2C27.286%20Z%20M30.163%2C34.334%20C29.516%2C33.932%2028.833%2C33.6%2028.128%2C33.333%20C30.098%2C32.023%2031.397%2C29.802%2031.397%2C27.286%20C31.397%2C23.269%2028.087%2C20%2024.019%2C20%20C19.95%2C20%2016.639%2C23.269%2016.639%2C27.286%20C16.639%2C29.801%2017.937%2C32.023%2019.907%2C33.332%20C15.302%2C35.071%2012%2C39.638%2012%2C45%20C12%2C45.553%2012.448%2C46%2013%2C46%20L35%2C46%20C35.553%2C46%2036%2C45.553%2036%2C45%20C36%2C40.657%2033.764%2C36.57%2030.163%2C34.334%20L30.163%2C34.334%20Z%22%20id%3D%22Fill-1%22%20fill%3D%22%23242F3E%22%3E%3C%2Fpath%3E%0A%20%20%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" value="User" vertex="1">
+          <mxGeometry height="120" width="120" x="100" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="browser" parent="1" style="shape=image;verticalLabelPosition=bottom;verticalAlign=top;labelPosition=center;align=center;imageAspect=0;aspect=fixed;html=1;whiteSpace=wrap;spacingTop=6;fontSize=14;fontStyle=0;image=data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20width%3D%2248px%22%20height%3D%2248px%22%20viewBox%3D%220%200%2048%2048%22%20version%3D%221.1%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%3E%0A%20%20%20%20%3Ctitle%3EIcon-Resource%2FGeneral-Resource%2FRes_Client_48_Light%3C%2Ftitle%3E%0A%20%20%20%20%3Cg%20id%3D%22Icon-Resource%2FGeneral-Resource%2FRes_Client_48%22%20stroke%3D%22none%22%20stroke-width%3D%221%22%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%0A%20%20%20%20%20%20%20%20%3Cpath%20d%3D%22M42.299%2C38.773%20L42.299%2C40.696%20C42.299%2C41.134%2041.945%2C41.49%2041.506%2C41.49%20L30.762%2C41.49%20C30.323%2C41.49%2029.968%2C41.134%2029.968%2C40.696%20L29.968%2C38.773%20C29.968%2C38.335%2030.323%2C37.98%2030.762%2C37.98%20L41.506%2C37.98%20C41.945%2C37.98%2042.299%2C38.335%2042.299%2C38.773%20L42.299%2C38.773%20Z%20M43.797%2C42.399%20C43.797%2C42.754%2043.508%2C43.044%2043.153%2C43.044%20L4.645%2C43.044%20C4.289%2C43.044%204%2C42.754%204%2C42.399%20L4%2C37.011%20C4%2C36.656%204.289%2C36.367%204.645%2C36.367%20L43.153%2C36.367%20C43.508%2C36.367%2043.797%2C36.656%2043.797%2C37.011%20L43.797%2C42.399%20Z%20M43.153%2C34.367%20L4.645%2C34.367%20C3.187%2C34.367%202%2C35.553%202%2C37.011%20L2%2C42.399%20C2%2C43.857%203.187%2C45.044%204.645%2C45.044%20L43.153%2C45.044%20C44.611%2C45.044%2045.797%2C43.857%2045.797%2C42.399%20L45.797%2C37.011%20C45.797%2C35.553%2044.611%2C34.367%2043.153%2C34.367%20L43.153%2C34.367%20Z%20M7.501%2C27.21%20L40.264%2C27.21%20L40.264%2C7.502%20L7.501%2C7.502%20L7.501%2C27.21%20Z%20M40.842%2C5.502%20L6.924%2C5.502%20C6.14%2C5.502%205.501%2C6.139%205.501%2C6.923%20L5.501%2C27.788%20C5.501%2C28.572%206.14%2C29.21%206.924%2C29.21%20L40.842%2C29.21%20C41.626%2C29.21%2042.264%2C28.572%2042.264%2C27.788%20L42.264%2C6.923%20C42.264%2C6.139%2041.626%2C5.502%2040.842%2C5.502%20L40.842%2C5.502%20Z%20M43.797%2C30.067%20C43.797%2C30.422%2043.508%2C30.711%2043.153%2C30.711%20L4.645%2C30.711%20C4.289%2C30.711%204%2C30.422%204%2C30.067%20L4%2C4.644%20C4%2C4.289%204.289%2C4%204.645%2C4%20L43.153%2C4%20C43.508%2C4%2043.797%2C4.289%2043.797%2C4.644%20L43.797%2C30.067%20Z%20M43.153%2C2%20L4.645%2C2%20C3.187%2C2%202%2C3.186%202%2C4.644%20L2%2C30.067%20C2%2C31.525%203.187%2C32.711%204.645%2C32.711%20L43.153%2C32.711%20C44.611%2C32.711%2045.797%2C31.525%2045.797%2C30.067%20L45.797%2C4.644%20C45.797%2C3.186%2044.611%2C2%2043.153%2C2%20L43.153%2C2%20Z%22%20id%3D%22Fill-3%22%20fill%3D%22%23232F3D%22%3E%3C%2Fpath%3E%0A%20%20%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" value="Browser / Web UI" vertex="1">
+          <mxGeometry height="120" width="120" x="100" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="api" parent="1" style="shape=image;verticalLabelPosition=bottom;verticalAlign=top;labelPosition=center;align=center;imageAspect=0;aspect=fixed;html=1;whiteSpace=wrap;spacingTop=6;fontSize=14;fontStyle=0;image=data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20width%3D%2248px%22%20height%3D%2248px%22%20viewBox%3D%220%200%2048%2048%22%20version%3D%221.1%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%3E%0A%20%20%20%20%3Ctitle%3EIcon-Resource%2FGeneral-Resource%2FRes_Generic-Application_48_Light%3C%2Ftitle%3E%0A%20%20%20%20%3Cg%20id%3D%22Icon-Resource%2FGeneral-Resource%2FRes_Generic-Application_48%22%20stroke%3D%22none%22%20stroke-width%3D%221%22%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%0A%20%20%20%20%20%20%20%20%3Cpath%20d%3D%22M37%2C35%20L46%2C35%20L46%2C37%20L37%2C37%20L37%2C46%20L35%2C46%20L35%2C37%20L26%2C37%20L26%2C35%20L35%2C35%20L35%2C26%20L37%2C26%20L37%2C35%20Z%20M4%2C44%20L20%2C44%20L20%2C28%20L4%2C28%20L4%2C44%20Z%20M21%2C26%20L3%2C26%20C2.447%2C26%202%2C26.448%202%2C27%20L2%2C45%20C2%2C45.552%202.447%2C46%203%2C46%20L21%2C46%20C21.553%2C46%2022%2C45.552%2022%2C45%20L22%2C27%20C22%2C26.448%2021.553%2C26%2021%2C26%20L21%2C26%20Z%20M28%2C20%20L44%2C20%20L44%2C4%20L28%2C4%20L28%2C20%20Z%20M45%2C2%20L27%2C2%20C26.447%2C2%2026%2C2.448%2026%2C3%20L26%2C21%20C26%2C21.552%2026.447%2C22%2027%2C22%20L45%2C22%20C45.553%2C22%2046%2C21.552%2046%2C21%20L46%2C3%20C46%2C2.448%2045.553%2C2%2045%2C2%20L45%2C2%20Z%20M4%2C20%20L20%2C20%20L20%2C4%20L4%2C4%20L4%2C20%20Z%20M21%2C2%20L3%2C2%20C2.447%2C2%202%2C2.448%202%2C3%20L2%2C21%20C2%2C21.552%202.447%2C22%203%2C22%20L21%2C22%20C21.553%2C22%2022%2C21.552%2022%2C21%20L22%2C3%20C22%2C2.448%2021.553%2C2%2021%2C2%20L21%2C2%20Z%22%20id%3D%22Fill-1%22%20fill%3D%22%23232F3D%22%3E%3C%2Fpath%3E%0A%20%20%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" value="Product Catalog API Server" vertex="1">
+          <mxGeometry height="120" width="120" x="390" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="cache_note" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=14;strokeWidth=1;strokeColor=#9a3412;fillColor=#ffedd5;fontSize=14;fontStyle=1;" value="cache-aside&#xa;hit / miss" vertex="1">
+          <mxGeometry height="70" width="140" x="380" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="elasticache" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#C925D1;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=14;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elasticache;" value="Amazon ElastiCache&#xa;Redis proxy" vertex="1">
+          <mxGeometry height="120" width="120" x="730" y="175" as="geometry" />
+        </mxCell>
+        <mxCell id="rds" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#C925D1;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=14;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.rds;" value="Amazon RDS&#xa;PostgreSQL" vertex="1">
+          <mxGeometry height="120" width="120" x="730" y="365" as="geometry" />
+        </mxCell>
+        <mxCell id="flow1" edge="1" parent="1" source="user" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;fontSize=12;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="browser" value="search / save">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="160" y="280" />
+              <mxPoint x="160" y="340" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="flow2" edge="1" parent="1" source="browser" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;fontSize=12;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;jumpStyle=arc;flowAnimation=1;" target="api" value="HTTP">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="300" y="400" />
+              <mxPoint x="300" y="300" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="flow3" edge="1" parent="1" source="api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;fontSize=12;labelBackgroundColor=#ffffff;entryX=0;entryY=0.5;exitX=1;exitY=0.5;exitDx=0;exitDy=0;jumpStyle=arc;flowAnimation=1;" target="elasticache" value="cache lookup&#xa;GET / SET EX">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="600" y="300" />
+              <mxPoint x="600" y="235" />
+            </Array>
+            <mxPoint x="550" y="286" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="flow4" edge="1" parent="1" source="api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;fontSize=12;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;exitDx=0;exitDy=0;jumpStyle=arc;flowAnimation=1;" target="rds" value="SQL query&#xa;source of truth">
+          <mxGeometry relative="1" x="-0.0723" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="600" y="300" />
+              <mxPoint x="600" y="425" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="flow5" edge="1" parent="1" source="cache_note" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;fontSize=12;dashed=1;dashPattern=6 6;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="rds" value="cache miss =&gt; read DB&#xa;cache hit =&gt; return cached rows">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="590" y="425" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { createObservability } from "../../_shared/observability.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -23,6 +24,11 @@ const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY ?? "test";
 const orderQueue = process.env.ORDER_QUEUE_NAME ?? "order-processing-queue";
 const eventQueue = process.env.EVENT_QUEUE_NAME ?? "order-processing-events";
 const table = process.env.ORDER_TABLE_NAME ?? "orders";
+const host = process.env.ORDER_PROCESSING_HOST ?? "0.0.0.0";
+const observability = createObservability({
+  appName: "order-processing",
+  logFile: path.resolve(__dirname, "../.runtime/order-processing.log")
+});
 
 function json(res, statusCode, body) {
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
@@ -134,6 +140,9 @@ async function createOrder(payload) {
     JSON.stringify({ orderId: id })
   ]);
 
+  observability.incrementDomainEvent("order", "create");
+  observability.logEvent("info", "order_created", { id, customerName, itemName, quantity });
+
   return {
     id,
     customerName,
@@ -186,40 +195,62 @@ async function sendIndex(res) {
   res.end(html);
 }
 
+function normalizedRoute(method, pathname) {
+  if (method === "GET" && pathname === observability.metricsPath) return observability.metricsPath;
+  if (method === "GET" && pathname === "/api/orders") return "/api/orders";
+  if (method === "POST" && pathname === "/api/orders") return "/api/orders";
+  if (method === "GET" && pathname === "/api/events") return "/api/events";
+  if (/^\/api\/orders\/[^/]+$/.test(pathname)) return "/api/orders/:id";
+  return pathname;
+}
+
 const server = http.createServer(async (req, res) => {
+  const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+  const route = normalizedRoute(req.method ?? "GET", requestUrl.pathname);
+  const started = process.hrtime.bigint();
+  let statusCode = 500;
   try {
-    const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
     // 학습용 로컬 루프를 단순하게 유지하려고 UI와 주문 API를 한 서버에 둔다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);
+      statusCode = 200;
+      return;
+    }
+
+    if (observability.maybeHandleMetrics(req, res, requestUrl.pathname)) {
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/health") {
-      json(res, 200, {
+      json(res, 200, observability.healthFields({
         status: "ok",
         endpoint,
         profile,
         orderQueue,
         eventQueue,
         table
-      });
+      }));
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/orders") {
       json(res, 200, { items: await listOrders() });
+      statusCode = 200;
       return;
     }
 
     if (req.method === "POST" && requestUrl.pathname === "/api/orders") {
       json(res, 201, await createOrder(await readJsonBody(req)));
+      statusCode = 201;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/events") {
       json(res, 200, { items: await listEvents() });
+      statusCode = 200;
       return;
     }
 
@@ -228,20 +259,33 @@ const server = http.createServer(async (req, res) => {
       const order = await getOrder(match[1]);
       if (!order) {
         json(res, 404, { error: "not_found" });
+        statusCode = 404;
         return;
       }
       json(res, 200, order);
+      statusCode = 200;
       return;
     }
 
     json(res, 404, { error: "not_found" });
+    statusCode = 404;
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown_error";
-    json(res, message === "invalid_payload" ? 400 : 500, { error: message });
+    statusCode = message === "invalid_payload" ? 400 : 500;
+    observability.logEvent("error", "request_failed", { route, method: req.method ?? "GET", error: message });
+    json(res, statusCode, { error: message });
+  } finally {
+    observability.recordHttp({
+      method: req.method ?? "GET",
+      route,
+      statusCode,
+      durationMs: Number(process.hrtime.bigint() - started) / 1_000_000
+    });
   }
 });
 
-server.listen(port, "127.0.0.1", () => {
+server.listen(port, host, () => {
   console.log(`order-processing server listening on http://127.0.0.1:${port}`);
   console.log(`floci endpoint: ${endpoint}`);
+  observability.logEvent("info", "server_started", { port, endpoint, metricsPath: observability.metricsPath, logFile: observability.logFile });
 });

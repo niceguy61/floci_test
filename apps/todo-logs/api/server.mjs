@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { createObservability } from "../../_shared/observability.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -23,6 +24,11 @@ const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY ?? "test";
 const table = process.env.TODO_LOGS_TABLE_NAME ?? "todos";
 const logGroup = process.env.TODO_LOGS_LOG_GROUP ?? "/floci/todo-logs";
 const logStream = process.env.TODO_LOGS_LOG_STREAM ?? "todo-api";
+const host = process.env.TODO_LOGS_HOST ?? "0.0.0.0";
+const observability = createObservability({
+  appName: "todo-logs",
+  logFile: path.resolve(__dirname, "../.runtime/todo-logs.log")
+});
 
 function json(res, statusCode, body) {
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
@@ -149,6 +155,11 @@ async function createTodo(payload) {
   ]);
 
   await putLog(`[TODO_CREATED] id=${todo.id} title=${todo.title}`);
+  observability.incrementDomainEvent("todo", "create");
+  observability.logEvent("info", "todo_created", {
+    id: todo.id,
+    title: todo.title
+  });
   return todo;
 }
 
@@ -180,6 +191,11 @@ async function toggleTodo(id) {
   ]);
 
   await putLog(`[TODO_TOGGLED] id=${updated.id} completed=${updated.completed}`);
+  observability.incrementDomainEvent("todo", "toggle");
+  observability.logEvent("info", "todo_toggled", {
+    id: updated.id,
+    completed: updated.completed
+  });
   return updated;
 }
 
@@ -205,40 +221,73 @@ async function sendIndex(res) {
   res.end(html);
 }
 
+function normalizedRoute(method, pathname) {
+  if (method === "GET" && pathname === observability.metricsPath) {
+    return observability.metricsPath;
+  }
+  if (method === "GET" && pathname === "/api/todos") {
+    return "/api/todos";
+  }
+  if (method === "POST" && pathname === "/api/todos") {
+    return "/api/todos";
+  }
+  if (method === "GET" && pathname === "/api/logs") {
+    return "/api/logs";
+  }
+  if (/^\/api\/todos\/[^/]+\/toggle$/.test(pathname)) {
+    return "/api/todos/:id/toggle";
+  }
+  return pathname;
+}
+
 const server = http.createServer(async (req, res) => {
+  const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+  const route = normalizedRoute(req.method ?? "GET", requestUrl.pathname);
+  const started = process.hrtime.bigint();
+  let statusCode = 500;
+
   try {
-    const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
     // CRUD 상태와 운영 로그를 한 번에 이해할 수 있게 UI와 API를 같은 서버에 둔다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);
+      statusCode = 200;
+      return;
+    }
+
+    if (observability.maybeHandleMetrics(req, res, requestUrl.pathname)) {
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/health") {
-      json(res, 200, {
+      json(res, 200, observability.healthFields({
         status: "ok",
         endpoint,
         profile,
         table,
         logGroup,
         logStream
-      });
+      }));
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/todos") {
       json(res, 200, { items: await listTodos() });
+      statusCode = 200;
       return;
     }
 
     if (req.method === "POST" && requestUrl.pathname === "/api/todos") {
       json(res, 201, await createTodo(await readJsonBody(req)));
+      statusCode = 201;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/logs") {
       json(res, 200, { items: await listLogs() });
+      statusCode = 200;
       return;
     }
 
@@ -247,20 +296,42 @@ const server = http.createServer(async (req, res) => {
       const item = await toggleTodo(match[1]);
       if (!item) {
         json(res, 404, { error: "not_found" });
+        statusCode = 404;
         return;
       }
       json(res, 200, item);
+      statusCode = 200;
       return;
     }
 
     json(res, 404, { error: "not_found" });
+    statusCode = 404;
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown_error";
-    json(res, message === "invalid_payload" ? 400 : 500, { error: message });
+    statusCode = message === "invalid_payload" ? 400 : 500;
+    observability.logEvent("error", "request_failed", {
+      route,
+      method: req.method ?? "GET",
+      error: message
+    });
+    json(res, statusCode, { error: message });
+  } finally {
+    observability.recordHttp({
+      method: req.method ?? "GET",
+      route,
+      statusCode,
+      durationMs: Number(process.hrtime.bigint() - started) / 1_000_000
+    });
   }
 });
 
-server.listen(port, "127.0.0.1", () => {
+server.listen(port, host, () => {
   console.log(`todo-logs server listening on http://127.0.0.1:${port}`);
   console.log(`floci endpoint: ${endpoint}`);
+  observability.logEvent("info", "server_started", {
+    port,
+    endpoint,
+    metricsPath: observability.metricsPath,
+    logFile: observability.logFile
+  });
 });

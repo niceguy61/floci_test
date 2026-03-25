@@ -4,6 +4,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
+import { createObservability } from "../../_shared/observability.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -20,6 +21,11 @@ const profile = process.env.AWS_PROFILE ?? "floci";
 const region = process.env.AWS_DEFAULT_REGION ?? "us-east-1";
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID ?? "test";
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY ?? "test";
+const host = process.env.SECRET_VAULT_HOST ?? "0.0.0.0";
+const observability = createObservability({
+  appName: "secret-vault",
+  logFile: path.resolve(__dirname, "../.runtime/secret-vault.log")
+});
 
 function json(res, statusCode, body) {
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
@@ -104,6 +110,9 @@ async function createSecret(payload) {
     runtime.keyAlias
   ]);
 
+  observability.incrementDomainEvent("secret", "create");
+  observability.logEvent("info", "secret_created", { name });
+
   return {
     name,
     description,
@@ -117,52 +126,84 @@ async function sendIndex(res) {
   res.end(html);
 }
 
+function normalizedRoute(method, pathname) {
+  if (method === "GET" && pathname === observability.metricsPath) return observability.metricsPath;
+  if (method === "GET" && pathname === "/api/secrets") return "/api/secrets";
+  if (method === "POST" && pathname === "/api/secrets") return "/api/secrets";
+  if (/^\/api\/secrets\/[^/]+$/.test(pathname)) return "/api/secrets/:name";
+  return pathname;
+}
+
 const server = http.createServer(async (req, res) => {
+  const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+  const route = normalizedRoute(req.method ?? "GET", requestUrl.pathname);
+  const started = process.hrtime.bigint();
+  let statusCode = 500;
   try {
     const runtime = await readRuntime();
-    const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
     // 저장/목록/상세 조회 흐름을 한눈에 보이게 하려고 UI와 API를 함께 제공한다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);
+      statusCode = 200;
+      return;
+    }
+
+    if (observability.maybeHandleMetrics(req, res, requestUrl.pathname)) {
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/health") {
-      json(res, 200, {
+      json(res, 200, observability.healthFields({
         status: "ok",
         endpoint,
         profile,
         keyAlias: runtime.keyAlias,
         keyArn: runtime.keyArn
-      });
+      }));
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/secrets") {
       json(res, 200, { items: await listSecrets() });
+      statusCode = 200;
       return;
     }
 
     if (req.method === "POST" && requestUrl.pathname === "/api/secrets") {
       json(res, 201, await createSecret(await readJsonBody(req)));
+      statusCode = 201;
       return;
     }
 
     const match = requestUrl.pathname.match(/^\/api\/secrets\/([^/]+)$/);
     if (req.method === "GET" && match) {
       json(res, 200, await getSecret(decodeURIComponent(match[1])));
+      statusCode = 200;
       return;
     }
 
     json(res, 404, { error: "not_found" });
+    statusCode = 404;
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown_error";
-    json(res, message === "invalid_payload" ? 400 : 500, { error: message });
+    statusCode = message === "invalid_payload" ? 400 : 500;
+    observability.logEvent("error", "request_failed", { route, method: req.method ?? "GET", error: message });
+    json(res, statusCode, { error: message });
+  } finally {
+    observability.recordHttp({
+      method: req.method ?? "GET",
+      route,
+      statusCode,
+      durationMs: Number(process.hrtime.bigint() - started) / 1_000_000
+    });
   }
 });
 
-server.listen(port, "127.0.0.1", () => {
+server.listen(port, host, () => {
   console.log(`secret-vault server listening on http://127.0.0.1:${port}`);
   console.log(`floci endpoint: ${endpoint}`);
+  observability.logEvent("info", "server_started", { port, endpoint, metricsPath: observability.metricsPath, logFile: observability.logFile });
 });

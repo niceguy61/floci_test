@@ -53,8 +53,8 @@ bash ops/aws-local.sh dynamodb list-tables
 | CloudFormation | stack 생성/조회 | runnable | 동일 | `cloudformation-playground`에서 사용 |
 | Lambda | AWS runtime이 실제 실행 | 문서상 지원, 현재 환경에선 보류 | 동일 | 현재 환경에서 runtime container가 `Permission denied` |
 | EventBridge | 문서상 API 지원 | 설계/보류 | 동일 | Lambda와 함께 실습하는 경로는 현재 보류 |
-| RDS | 문서상 API 지원 | 보류 | 동일 | `create-db-instance`가 현재 환경에선 `BindException` |
-| ElastiCache | 문서상 API 지원 | 보류 | `create-cache-cluster` 아님, `create-replication-group` 경로 | 현재 환경에선 replication group 생성도 실패 |
+| RDS | 문서상 API 지원 | runnable with caveat | 동일 | `docker.sock` group 정렬과 추가 포트 노출이 필요 |
+| ElastiCache | 문서상 API 지원 | runnable with caveat | `create-cache-cluster` 아님, `create-replication-group` 경로 | `docker.sock` group 정렬과 추가 포트 노출이 필요 |
 
 ## 현재 runnable hands-on과 사용 서비스
 
@@ -70,6 +70,7 @@ bash ops/aws-local.sh dynamodb list-tables
 | `feature-flags` | `SSM Parameter Store` |
 | `stream-inspector` | `Kinesis` |
 | `cloudformation-playground` | `CloudFormation`, `S3` |
+| `product-catalog-cache` | `RDS`, `ElastiCache` |
 
 ## 보류된 고급 예제
 
@@ -82,10 +83,11 @@ bash ops/aws-local.sh dynamodb list-tables
 ### 2. RDS + ElastiCache 상품 검색 캐시
 
 - 공식 문서상 지원 서비스
-- 하지만 현재 환경에서:
-  - `RDS create-db-instance`: `java.net.BindException: Permission denied`
-  - `ElastiCache create-replication-group`: 생성 실패
-- 포트는 열려 있어도 backend 서비스가 실제로 붙지 않는 상태로 확인됨
+- 현재 저장소에서는 runnable hands-on으로 추가됨
+- 단, 아래 조건이 맞아야 합니다:
+  - `docker.sock` 접근 권한이 있어야 함
+  - `6379-6399`, `7001-7099` 포트가 노출돼 있어야 함
+  - 현재 저장소 compose처럼 `docker.sock` group 정렬이 되어 있어야 함
 
 ## 추천 읽는 순서
 

@@ -30,7 +30,7 @@
 
 ## 지금 바로 실행 가능한 핸즈온
 
-현재 이 저장소에는 아래 10개의 runnable hands-on이 있습니다.
+현재 이 저장소에는 아래 11개의 runnable hands-on이 있습니다.
 
 - [이미지 업로드 갤러리](./apps/image-gallery/README.md)
 - [주문 접수와 비동기 처리](./apps/order-processing/README.md)
@@ -42,6 +42,7 @@
 - [기능 플래그 대시보드](./apps/feature-flags/README.md)
 - [스트림 인스펙터](./apps/stream-inspector/README.md)
 - [CloudFormation Playground](./apps/cloudformation-playground/README.md)
+- [상품 카탈로그 캐시](./apps/product-catalog-cache/README.md)
 
 핵심 공통 규칙:
 
@@ -59,6 +60,20 @@ bash ops/bootstrap-floci.sh
 npm run priority3:setup
 ```
 
+`docker-compose.floci.yml`을 직접 실행해 `floci + Grafana + Prometheus + Loki + Promtail`을 함께 올리려면:
+
+```bash
+docker compose -f ops/docker-compose.floci.yml up -d
+```
+
+확인 주소:
+
+- floci: `http://127.0.0.1:4566`
+- Grafana: `http://127.0.0.1:3012`
+- Prometheus: `http://127.0.0.1:9091`
+- Loki: `http://127.0.0.1:3101`
+- floci exporter: `http://127.0.0.1:9464/metrics`
+
 전체 검증:
 
 ```bash
@@ -67,10 +82,16 @@ npm run priority3:smoke
 
 핸즈온 요약 인덱스는 [apps/README.md](./apps/README.md)에서 볼 수 있습니다.
 
-10개 전체를 한 번에 검증하려면:
+기존 10개 전체를 한 번에 검증하려면:
 
 ```bash
 npm run all10:smoke
+```
+
+새 `RDS + ElastiCache` 예제까지 포함한 11개 전체 검증:
+
+```bash
+npm run all11:smoke
 ```
 
 AWS 공식 아이콘 기반 draw.io 다이어그램:
@@ -85,6 +106,7 @@ AWS 공식 아이콘 기반 draw.io 다이어그램:
 - [feature-flags GIF](./apps/feature-flags/assets/feature-flags-architecture.gif) / [draw.io source](./apps/feature-flags/assets/feature-flags-architecture.drawio)
 - [stream-inspector GIF](./apps/stream-inspector/assets/stream-inspector-architecture.gif) / [draw.io source](./apps/stream-inspector/assets/stream-inspector-architecture.drawio)
 - [cloudformation-playground GIF](./apps/cloudformation-playground/assets/cloudformation-playground-architecture.gif) / [draw.io source](./apps/cloudformation-playground/assets/cloudformation-playground-architecture.drawio)
+- [product-catalog-cache GIF](./apps/product-catalog-cache/assets/product-catalog-cache-architecture.gif) / [draw.io source](./apps/product-catalog-cache/assets/product-catalog-cache-architecture.drawio)
 
 생성 스크립트: `python3 scripts/generate_architecture_diagrams.py`
 
@@ -92,8 +114,6 @@ AWS 공식 아이콘 기반 draw.io 다이어그램:
 
 현재 이 저장소는 `floci`가 실제로 잘 붙는 서비스 중심으로 hands-on을 구성했습니다. 아래는 아직 보류된 항목입니다.
 
-- `RDS + ElastiCache`
-  - 공식 문서상 지원 서비스이지만, 현재 환경에선 runtime/proxy 단계가 안정적으로 붙지 않았습니다.
 - `EventBridge + Lambda`
   - 현재 환경에서 Lambda runtime 컨테이너 기동이 `Permission denied`로 막혔습니다.
 - `auth-portal`
@@ -106,7 +126,7 @@ AWS 공식 아이콘 기반 draw.io 다이어그램:
 
 이번 버전에서 정리된 내용:
 
-- runnable hands-on 10개 구성
+- runnable hands-on 11개 구성
 - 공통 endpoint/profile 규칙 통일
 - `.aws-local` 기반 격리된 AWS CLI 설정
 - 초보자용 설치/요구사항 문서 추가
@@ -117,7 +137,8 @@ AWS 공식 아이콘 기반 draw.io 다이어그램:
   - Trade-off 표
   - 단계별 hands-on 가이드
   - 중간 테스트와 최종 smoke 절차
-- 전체 smoke 스크립트 기준 10개 예제 통과
+- 전체 smoke 스크립트 기준 기존 10개 예제 유지
+- `RDS + ElastiCache` 기반 `product-catalog-cache` 예제 추가
 
 ## floci와 LocalStack을 어떻게 봐야 하나
 
@@ -231,6 +252,7 @@ AWS 로컬 에뮬레이터 비교 자료를 찾을 때는 보통 `LocalStack`이
 
 - `Lambda`, `ElastiCache`, `RDS`
   - `/var/run/docker.sock` 마운트 필요
+  - `docker.sock`에 맞는 group 정렬 필요
   - 추가 포트 범위 오픈 필요
   - 같은 Docker 네트워크에 붙도록 설정 필요
 
@@ -288,6 +310,8 @@ aws --endpoint-url http://localhost:4566 s3 mb s3://my-bucket
 services:
   floci:
     image: hectorvent/floci:latest
+    group_add:
+      - "1001"
     ports:
       - "4566:4566"
       - "6379-6399:6379-6399"
@@ -298,6 +322,21 @@ services:
     environment:
       FLOCI_SERVICES_DOCKER_NETWORK: my-project_default
 ```
+
+이 저장소에서는 실제 실행 파일로 아래 구성을 사용합니다.
+
+```bash
+docker compose -f ops/docker-compose.floci.yml up -d
+```
+
+이 compose 파일에는 다음이 함께 들어 있습니다.
+
+- `floci`
+- `Grafana`
+- `Prometheus`
+- `Loki`
+- `Promtail`
+- `floci` service metrics exporter
 
 ## AWS CLI 연결 방법
 

@@ -5,6 +5,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { readAuthRuntime } from "../auth/runtime.mjs";
+import { createObservability } from "../../_shared/observability.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -20,6 +21,11 @@ const profile = process.env.AWS_PROFILE ?? "floci";
 const region = process.env.AWS_DEFAULT_REGION ?? "us-east-1";
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID ?? "test";
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY ?? "test";
+const host = process.env.AUTH_PORTAL_HOST ?? "0.0.0.0";
+const observability = createObservability({
+  appName: "auth-portal",
+  logFile: path.resolve(__dirname, "../.runtime/auth-portal.log")
+});
 
 function json(res, statusCode, body) {
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
@@ -91,6 +97,8 @@ async function signup(payload) {
   }
 
   const data = await runAwsJson(args);
+  observability.incrementDomainEvent("auth", "signup");
+  observability.logEvent("info", "signup", { username });
   return {
     username,
     userConfirmed: Boolean(data.UserConfirmed)
@@ -115,6 +123,8 @@ async function confirmUser(payload) {
     "--confirmation-code",
     code
   ]);
+  observability.incrementDomainEvent("auth", "confirm");
+  observability.logEvent("info", "confirm", { username });
 
   return { username, confirmed: true, code };
 }
@@ -138,6 +148,8 @@ async function login(payload) {
     "--auth-parameters",
     `USERNAME=${username},PASSWORD=${password}`
   ]);
+  observability.incrementDomainEvent("auth", "login");
+  observability.logEvent("info", "login", { username });
 
   return {
     accessToken: data.AuthenticationResult?.AccessToken ?? "",
@@ -166,39 +178,57 @@ async function profileFromToken(token) {
 }
 
 const server = http.createServer(async (req, res) => {
+  const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
+  const route = /^\/api\/profile$/.test(requestUrl.pathname) ? "/api/profile" :
+    /^\/api\/signup$/.test(requestUrl.pathname) ? "/api/signup" :
+    /^\/api\/confirm$/.test(requestUrl.pathname) ? "/api/confirm" :
+    /^\/api\/login$/.test(requestUrl.pathname) ? "/api/login" :
+    requestUrl.pathname === observability.metricsPath ? observability.metricsPath :
+    requestUrl.pathname;
+  const started = process.hrtime.bigint();
+  let statusCode = 500;
   try {
     const runtime = await readAuthRuntime();
-    const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host}`);
     // 데모를 단순하게 유지하기 위해 UI 제공과 Cognito 호출 프록시를 한 서버가 맡는다.
 
     if (req.method === "GET" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
       await sendIndex(res);
+      statusCode = 200;
+      return;
+    }
+
+    if (observability.maybeHandleMetrics(req, res, requestUrl.pathname)) {
+      statusCode = 200;
       return;
     }
 
     if (req.method === "GET" && requestUrl.pathname === "/api/health") {
-      json(res, 200, {
+      json(res, 200, observability.healthFields({
         status: "ok",
         endpoint,
         profile,
         userPoolId: runtime.userPoolId,
         clientId: runtime.clientId
-      });
+      }));
+      statusCode = 200;
       return;
     }
 
     if (req.method === "POST" && requestUrl.pathname === "/api/signup") {
       json(res, 201, await signup(await readJsonBody(req)));
+      statusCode = 201;
       return;
     }
 
     if (req.method === "POST" && requestUrl.pathname === "/api/confirm") {
       json(res, 200, await confirmUser(await readJsonBody(req)));
+      statusCode = 200;
       return;
     }
 
     if (req.method === "POST" && requestUrl.pathname === "/api/login") {
       json(res, 200, await login(await readJsonBody(req)));
+      statusCode = 200;
       return;
     }
 
@@ -207,20 +237,33 @@ const server = http.createServer(async (req, res) => {
       const [, token] = authHeader.split(" ");
       if (!token) {
         json(res, 401, { error: "missing_token" });
+        statusCode = 401;
         return;
       }
       json(res, 200, await profileFromToken(token));
+      statusCode = 200;
       return;
     }
 
     json(res, 404, { error: "not_found" });
+    statusCode = 404;
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown_error";
-    json(res, message === "invalid_payload" ? 400 : 500, { error: message });
+    statusCode = message === "invalid_payload" ? 400 : 500;
+    observability.logEvent("error", "request_failed", { route, method: req.method ?? "GET", error: message });
+    json(res, statusCode, { error: message });
+  } finally {
+    observability.recordHttp({
+      method: req.method ?? "GET",
+      route,
+      statusCode,
+      durationMs: Number(process.hrtime.bigint() - started) / 1_000_000
+    });
   }
 });
 
-server.listen(port, "127.0.0.1", () => {
+server.listen(port, host, () => {
   console.log(`auth-portal server listening on http://127.0.0.1:${port}`);
   console.log(`floci endpoint: ${endpoint}`);
+  observability.logEvent("info", "server_started", { port, endpoint, metricsPath: observability.metricsPath, logFile: observability.logFile });
 });

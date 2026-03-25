@@ -121,6 +121,60 @@ aws --endpoint-url http://localhost:4566 s3 ls
 
 즉, Web UI는 `floci`가 제공하는 것이 아니라 **주변 운영 도구가 제공**한다고 보는 편이 정확합니다.
 
+### 4.1 현재 저장소에서 제공하는 모니터링 UI 예시
+
+이 저장소는 공용 모니터링 스택으로 `Grafana + Prometheus + Loki + Promtail` 구성을 포함합니다.
+
+- Grafana: `http://127.0.0.1:3012`
+- Prometheus: `http://127.0.0.1:9091`
+- Loki: `http://127.0.0.1:3101`
+- floci exporter: `http://127.0.0.1:9464/metrics`
+
+실행:
+
+```bash
+docker compose -f ops/docker-compose.floci.yml up -d
+```
+
+로그인 화면:
+
+![Grafana login](./assets/grafana_login.png)
+
+메인 화면:
+
+![Grafana main](./assets/grafana_main.png)
+
+대시보드 목록:
+
+![Grafana dashboard list](./assets/grafana_dashboard_list.png)
+
+공용 앱 HTTP 대시보드:
+
+![Hands-on HTTP overview](./assets/grafana_dashboard_floci_handson_http_overview.png)
+
+공용 floci 서비스 대시보드:
+
+![floci service overview](./assets/grafana_dashboard_floci_service_overview.png)
+
+이 대시보드에서는 현재 아래 항목을 볼 수 있습니다.
+
+- 서비스별 리소스 수
+- `RDS` / `ElastiCache` proxy TCP reachability
+- `SQS` queue depth
+- `DynamoDB` item count
+- `S3` bucket object count / bytes
+- `CloudWatch Logs` stream / event count
+- `Cognito` user count
+- hands-on 앱 health / metrics endpoint health
+
+상품 카탈로그 캐시 대시보드:
+
+![product catalog cache overview](./assets/grafana_dashboard_product_cache_overview.png)
+
+상세 패널 예시:
+
+![Grafana dashboard detail](./assets/grafana_dashboard_detail.png)
+
 ## 5. 어떤 지표를 보면 좋은가
 
 내장 애플리케이션 메트릭이 공식적으로 문서화되지 않았기 때문에, 처음에는 아래 정도만 잡아도 충분합니다.
@@ -134,6 +188,20 @@ aws --endpoint-url http://localhost:4566 s3 ls
 - `s3 ls`, `sqs list-queues`, `dynamodb list-tables` 같은 주요 서비스 합성 체크 성공 여부
 - Redis/RDS proxy 포트 연결 가능 여부
 - persistent 모드 사용 시 디스크 사용량
+
+현재 저장소의 공용 exporter는 위 항목 중 일부를 `Prometheus` 메트릭으로 직접 노출합니다.
+
+예:
+
+- `floci_resource_total`
+- `floci_sqs_messages`
+- `floci_dynamodb_table_items`
+- `floci_s3_bucket_objects`
+- `floci_s3_bucket_bytes`
+- `floci_cloudwatch_log_streams`
+- `floci_cloudwatch_log_events`
+- `floci_cognito_users`
+- `floci_proxy_tcp_up`
 
 ## 6. 최소 권장 운영 패턴
 

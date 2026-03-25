@@ -1,6 +1,6 @@
 # Hands-on Index
 
-이 디렉터리는 `floci`를 이용해 AWS 핵심 서비스 감각을 익히는 **실행 가능한 hands-on 10개**를 담고 있습니다.  
+이 디렉터리는 `floci`를 이용해 AWS 핵심 서비스 감각을 익히는 **실행 가능한 hands-on 11개**를 담고 있습니다.  
 대상은 아래와 같습니다.
 
 - AWS를 처음 배우는 개발자
@@ -21,6 +21,7 @@
 | [기능 플래그 대시보드](./feature-flags/README.md) | `SSM Parameter Store` | `http://127.0.0.1:3008` | 설정값과 feature flag 관리 |
 | [스트림 인스펙터](./stream-inspector/README.md) | `Kinesis` | `http://127.0.0.1:3009` | stream write / read / shard iterator |
 | [CloudFormation Playground](./cloudformation-playground/README.md) | `CloudFormation + S3` | `http://127.0.0.1:3010` | IaC, stack 상태 추적 |
+| [상품 카탈로그 캐시](./product-catalog-cache/README.md) | `RDS + ElastiCache` | `http://127.0.0.1:3011` | cache-aside, cache hit / miss, 데이터 원본과 캐시 분리 |
 
 ## 지원 환경
 
@@ -199,11 +200,18 @@ npm run priority3:setup
 npm run priority3:smoke
 ```
 
-10개 전체를 한 번에 준비/검증하려면:
+기존 10개를 한 번에 준비/검증하려면:
 
 ```bash
 npm run all10:setup
 npm run all10:smoke
+```
+
+새 `RDS + ElastiCache` 예제까지 포함한 11개 전체 준비/검증:
+
+```bash
+npm run all11:setup
+npm run all11:smoke
 ```
 
 개별 hands-on은 각 폴더 README에 있는 `setup` / `smoke`를 실행합니다.
@@ -222,12 +230,16 @@ npm run all10:smoke
 8. [기능 플래그 대시보드](./feature-flags/README.md)
 9. [스트림 인스펙터](./stream-inspector/README.md)
 10. [CloudFormation Playground](./cloudformation-playground/README.md)
+11. [상품 카탈로그 캐시](./product-catalog-cache/README.md)
 
 ## 현재 보류된 고급 예제
 
-아래는 설계는 되어 있지만, 현재 런타임 제약 때문에 runnable hands-on으로 넣지 않은 항목입니다.
-
-- `RDS + ElastiCache 상품 검색 캐시 예제`
 - `EventBridge + Lambda 이벤트 파이프라인`
+  - 여전히 runnable hands-on으로는 보류입니다.
 
-이 둘은 `floci` 공식 문서상 서비스 지원은 보이지만, 현재 환경에서는 runtime 단계가 안정적으로 붙지 않았습니다.
+기존에 이 섹션에 있던 `RDS + ElastiCache 상품 검색 캐시 예제`는 이제
+[상품 카탈로그 캐시](./product-catalog-cache/README.md)로 구현되었습니다.
+
+- 추가 조건:
+  - `RDS + ElastiCache`를 실제로 띄우므로 `docker.sock` 접근 권한과 추가 포트 노출이 필요합니다.
+  - 현재 저장소의 [ops/docker-compose.floci.yml](/mnt/d/github/floci_test/ops/docker-compose.floci.yml#L1)은 이를 반영합니다.

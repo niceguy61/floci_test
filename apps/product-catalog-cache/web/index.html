@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Product Catalog Cache Hands-on</title>
+    <style>
+      :root {
+        --bg: #f4f1eb;
+        --panel: #fffdf9;
+        --line: #ddd1c2;
+        --text: #231b16;
+        --muted: #6e6258;
+        --accent: #aa4f1d;
+        --accent-soft: #f6e1d2;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background:
+          radial-gradient(circle at top left, #fff7ef 0%, transparent 32%),
+          linear-gradient(180deg, #efe5d9 0%, #f8f5ef 100%);
+        color: var(--text);
+      }
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .hero {
+        margin-bottom: 22px;
+      }
+      .hero h1 {
+        margin: 0 0 10px;
+        font-size: 35px;
+      }
+      .hero p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 760px;
+        line-height: 1.5;
+      }
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin: 22px 0;
+      }
+      .pill {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 16px;
+        box-shadow: 0 12px 28px rgba(65, 45, 28, 0.06);
+      }
+      .pill strong {
+        display: block;
+        font-size: 14px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      .pill span {
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 360px 1fr 360px;
+        gap: 18px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 18px;
+        box-shadow: 0 14px 28px rgba(65, 45, 28, 0.07);
+      }
+      h2 {
+        margin: 0 0 14px;
+        font-size: 19px;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      input, textarea, button {
+        font: inherit;
+      }
+      input, textarea {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px 12px;
+        background: #fff;
+      }
+      textarea {
+        min-height: 96px;
+        resize: vertical;
+      }
+      button {
+        border: none;
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .primary {
+        background: var(--accent);
+        color: white;
+      }
+      .secondary {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .status {
+        min-height: 22px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .toolbar input {
+        flex: 1;
+      }
+      .meta {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: #f7efe6;
+        color: #7c4622;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .list {
+        display: grid;
+        gap: 12px;
+      }
+      .item {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px;
+        background: #fff;
+        cursor: pointer;
+      }
+      .item h3 {
+        margin: 0 0 6px;
+        font-size: 17px;
+      }
+      .item p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+      .item .price {
+        margin-top: 10px;
+        color: var(--accent);
+        font-weight: 700;
+      }
+      pre {
+        margin: 0;
+        padding: 14px;
+        border-radius: 14px;
+        background: #f7f2eb;
+        overflow: auto;
+        font-size: 13px;
+      }
+      @media (max-width: 1100px) {
+        .summary,
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <h1>Product Catalog Cache Hands-on</h1>
+        <p>
+          `RDS`에 상품 원본 데이터를 저장하고, `ElastiCache`에 검색 결과를 캐시하는
+          cache-aside 패턴 예제입니다. 같은 검색을 반복할 때 응답 source가 `db`에서
+          `cache`로 바뀌는 흐름을 바로 볼 수 있습니다.
+        </p>
+      </section>
+
+      <section class="summary">
+        <article class="pill">
+          <strong>검색 source</strong>
+          <span id="last-source">-</span>
+        </article>
+        <article class="pill">
+          <strong>캐시 key</strong>
+          <span id="last-cache-key" style="font-size: 15px">-</span>
+        </article>
+        <article class="pill">
+          <strong>상품 수</strong>
+          <span id="item-count">0</span>
+        </article>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>상품 등록 / 수정</h2>
+          <form id="product-form">
+            <label class="field">
+              <span>SKU</span>
+              <input id="sku" required />
+            </label>
+            <label class="field">
+              <span>이름</span>
+              <input id="name" required />
+            </label>
+            <label class="field">
+              <span>가격 (원)</span>
+              <input id="price" type="number" min="0" step="100" required />
+            </label>
+            <label class="field">
+              <span>설명</span>
+              <textarea id="description"></textarea>
+            </label>
+            <button class="primary" type="submit">상품 저장</button>
+            <div id="save-status" class="status"></div>
+          </form>
+        </article>
+
+        <article class="card">
+          <h2>상품 검색</h2>
+          <div class="toolbar">
+            <input id="query" placeholder="이름, SKU, 설명으로 검색" />
+            <button id="search-button" class="secondary" type="button">검색</button>
+          </div>
+          <div class="meta">
+            <span class="tag">RDS 원본 + ElastiCache 캐시</span>
+            <span class="tag">cache-aside</span>
+          </div>
+          <div id="items" class="list"></div>
+        </article>
+
+        <article class="card">
+          <h2>상세 응답</h2>
+          <pre id="detail">{}</pre>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("product-form");
+      const searchInput = document.getElementById("query");
+      const searchButton = document.getElementById("search-button");
+      const itemsNode = document.getElementById("items");
+      const detailNode = document.getElementById("detail");
+      const saveStatusNode = document.getElementById("save-status");
+      const lastSourceNode = document.getElementById("last-source");
+      const lastCacheKeyNode = document.getElementById("last-cache-key");
+      const itemCountNode = document.getElementById("item-count");
+
+      function formatPrice(priceCents) {
+        return new Intl.NumberFormat("ko-KR", {
+          style: "currency",
+          currency: "KRW",
+          maximumFractionDigits: 0
+        }).format(Number(priceCents) / 100);
+      }
+
+      async function request(url, options = {}) {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "request_failed");
+        }
+        return data;
+      }
+
+      async function loadProducts(query = "") {
+        const data = await request(`/api/products?q=${encodeURIComponent(query)}`);
+        lastSourceNode.textContent = data.source;
+        lastCacheKeyNode.textContent = data.cacheKey;
+        itemCountNode.textContent = String(data.items.length);
+        itemsNode.innerHTML = "";
+
+        if (!data.items.length) {
+          itemsNode.innerHTML = '<div class="status">검색 결과가 없습니다.</div>';
+          return;
+        }
+
+        data.items.forEach((item) => {
+          const node = document.createElement("button");
+          node.type = "button";
+          node.className = "item";
+          node.innerHTML = `
+            <h3>${item.name}</h3>
+            <p>SKU: ${item.sku}</p>
+            <p>${item.description || "설명 없음"}</p>
+            <div class="price">${formatPrice(item.priceCents)}</div>
+          `;
+          node.addEventListener("click", async () => {
+            const detail = await request(`/api/products/${encodeURIComponent(item.sku)}`);
+            detailNode.textContent = JSON.stringify(detail, null, 2);
+          });
+          itemsNode.append(node);
+        });
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const payload = {
+          sku: document.getElementById("sku").value.trim(),
+          name: document.getElementById("name").value.trim(),
+          priceCents: Number(document.getElementById("price").value.trim()),
+          description: document.getElementById("description").value.trim()
+        };
+
+        saveStatusNode.textContent = "상품을 저장하고 캐시를 비우는 중입니다...";
+
+        try {
+          const created = await request("/api/products", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          detailNode.textContent = JSON.stringify(created, null, 2);
+          saveStatusNode.textContent = "상품이 저장되었습니다.";
+          await loadProducts(searchInput.value.trim());
+        } catch (error) {
+          saveStatusNode.textContent = error.message || "저장 실패";
+        }
+      });
+
+      searchButton.addEventListener("click", () => {
+        loadProducts(searchInput.value.trim()).catch((error) => {
+          itemsNode.innerHTML = `<div class="status">${error.message || "검색 실패"}</div>`;
+        });
+      });
+
+      searchInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          searchButton.click();
+        }
+      });
+
+      loadProducts("").catch(() => {});
+    </script>
+  </body>
+</html>

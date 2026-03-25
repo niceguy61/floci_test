@@ -1,0 +1,61 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: product-catalog-cache-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    ports:
+      - "9091:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - product-catalog-cache-prometheus-data:/prometheus
+
+  loki:
+    image: grafana/loki:3.2.1
+    container_name: product-catalog-cache-loki
+    command:
+      - -config.file=/etc/loki/config.yml
+    ports:
+      - "3101:3100"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - product-catalog-cache-loki-data:/loki
+
+  promtail:
+    image: grafana/promtail:3.2.1
+    container_name: product-catalog-cache-promtail
+    command:
+      - -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - ../../apps/product-catalog-cache/.runtime:/var/log/product-catalog-cache:ro
+      - product-catalog-cache-promtail-data:/tmp
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    container_name: product-catalog-cache-grafana
+    depends_on:
+      - prometheus
+      - loki
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3012:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - product-catalog-cache-grafana-data:/var/lib/grafana
+
+volumes:
+  product-catalog-cache-prometheus-data:
+  product-catalog-cache-loki-data:
+  product-catalog-cache-promtail-data:
+  product-catalog-cache-grafana-data:
