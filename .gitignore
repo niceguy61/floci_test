@@ -10,3 +10,4 @@ apps/**/playwright-report
 apps/**/test-results
 data
 .aws-local
+blog_article.md
